@@ -1,0 +1,11 @@
+{
+  "name": "melodio-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/build.mjs --serve",
+    "build": "node scripts/build.mjs",
+    "test": "node test/filename-utils.test.cjs && npm run build && node test/build.test.mjs",
+    "deploy:grenyes": "npm run build && node scripts/deploy-grenyes.mjs"
+  }
+}
