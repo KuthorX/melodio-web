@@ -1997,7 +1997,8 @@ body[data-skin="glass"] .touch-track-row.is-active { color: var(--web-accent); }
   transform: none;
 }
 .control-dock .primary-controls { gap: 20px; }
-.control-dock button {
+.control-dock button,
+.control-dock .app-repo-link {
   min-height: 50px;
   padding: 0 18px;
   border: 1px solid var(--web-line);
@@ -2006,6 +2007,7 @@ body[data-skin="glass"] .touch-track-row.is-active { color: var(--web-accent); }
   background: transparent;
   font-size: 14px;
 }
+.control-dock .app-repo-link { display: inline-flex; align-items: center; text-decoration: none; }
 .control-dock .primary-controls button { min-width: 52px; padding: 0 12px; border: 0; font-size: 17px; }
 .control-dock .primary-controls .play-button {
   min-width: 68px;

@@ -2,6 +2,8 @@
 
 浏览器本地专辑播放器。音频与图片仅在当前浏览器中处理，不上传服务器。
 
+在线版本：<https://kuthorx.github.io/melodio-web/>。APP 版本源码：<https://github.com/sumizomeee-rgb/melodio>。
+
 ## 使用
 
 ```bash
