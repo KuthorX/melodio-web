@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-08-07",
+    "macrostructure": "Workbench",
+    "theme": "custom multi-skin",
+    "theme_axes": "light+dark / roman-serif+sans / warm+cool",
+    "vibe": "archival paper, night film, refracted tide",
+    "enrichment": "existing album artwork",
+    "brief": "Melodio player density, typography, themes, and responsive controls"
+  },
+  {
+    "date": "2026-08-07",
+    "macrostructure": "Workbench",
+    "theme": "studied-DNA multi-material",
+    "theme_axes": "matte+glass+metal+paper / flat+spatial / warm+cool",
+    "vibe": "music instrument, refracted glass, tactile media, spatial record",
+    "enrichment": "album artwork, waveform, vinyl geometry",
+    "brief": "Nine anonymous themes, rare 3D surface, responsive player, FLAC and background playback"
+  }
+]

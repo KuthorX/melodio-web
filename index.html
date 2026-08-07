@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
-  <link rel="icon" href="data:," />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23100f0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23eee8dc' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23c95542'/%3E%3C/svg%3E" />
   <title>Melodio · Local Album Player</title>
   <script>
     (() => {
@@ -15,6 +15,7 @@
       document.documentElement.dataset.performance = enabled ? "mobile" : "full";
     })();
   </script>
+  <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body data-skin="stamp" data-clean="false">
@@ -33,12 +34,51 @@
         <span id="artistName" class="artist">YOUR NAME</span>
       </div>
       <div class="header-meta">
-        <span id="skinName" class="sr-only">邮票档案</span>
-        <div class="header-skins" role="group" aria-label="视觉皮肤">
-          <button type="button" data-set-skin="stamp" class="active"><span aria-hidden="true">▧</span> 邮票档案</button>
-          <button type="button" data-set-skin="film"><span aria-hidden="true">▥</span> 夜航胶片</button>
-          <button type="button" data-set-skin="glass"><span aria-hidden="true">≋</span> 玻璃潮汐</button>
-        </div>
+        <details id="themeMenu" class="theme-menu">
+          <summary aria-label="选择视觉主题">
+            <span class="theme-menu-label">主题</span>
+            <strong id="skinName">邮票档案</strong>
+            <span class="theme-menu-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="theme-menu-list">
+            <button type="button" data-set-skin="stamp" class="active">
+              <span class="theme-swatch theme-swatch-stamp" aria-hidden="true"></span>
+              <span><strong>邮票档案</strong><small>暖纸、铅印与朱红标记</small></span>
+            </button>
+            <button type="button" data-set-skin="film">
+              <span class="theme-swatch theme-swatch-film" aria-hidden="true"></span>
+              <span><strong>夜航胶片</strong><small>纯黑银幕与琥珀频谱</small></span>
+            </button>
+            <button type="button" data-set-skin="glass">
+              <span class="theme-swatch theme-swatch-glass" aria-hidden="true"></span>
+              <span><strong>玻璃潮汐</strong><small>冰蓝折射与潮汐波形</small></span>
+            </button>
+            <button type="button" data-set-skin="terminal">
+              <span class="theme-swatch theme-swatch-terminal" aria-hidden="true"></span>
+              <span><strong>午夜终端</strong><small>磷光字符与单色频谱</small></span>
+            </button>
+            <button type="button" data-set-skin="riso">
+              <span class="theme-swatch theme-swatch-riso" aria-hidden="true"></span>
+              <span><strong>孔版唱片</strong><small>蓝红套印与粗粝纸面</small></span>
+            </button>
+            <button type="button" data-set-skin="carbon">
+              <span class="theme-swatch theme-swatch-carbon" aria-hidden="true"></span>
+              <span><strong>黑频控制台</strong><small>炭黑平面与双色信号</small></span>
+            </button>
+            <button type="button" data-set-skin="instrument">
+              <span class="theme-swatch theme-swatch-instrument" aria-hidden="true"></span>
+              <span><strong>精密器材</strong><small>拉丝金属与实体控制</small></span>
+            </button>
+            <button type="button" data-set-skin="pulse">
+              <span class="theme-swatch theme-swatch-pulse" aria-hidden="true"></span>
+              <span><strong>脉冲暖流</strong><small>中性画布与高能波形</small></span>
+            </button>
+            <button type="button" data-set-skin="prism">
+              <span class="theme-swatch theme-swatch-prism" aria-hidden="true"></span>
+              <span><strong>液态棱镜</strong><small>空间唱片与折射声场</small></span>
+            </button>
+          </div>
+        </details>
       </div>
     </header>
 
@@ -77,12 +117,6 @@
           </div>
         </div>
 
-        <div class="mobile-skins" role="group" aria-label="视觉皮肤">
-          <button type="button" data-set-skin="stamp" class="active"><span aria-hidden="true">▧</span><span>邮票档案</span></button>
-          <button type="button" data-set-skin="film"><span aria-hidden="true">▥</span><span>夜航胶片</span></button>
-          <button type="button" data-set-skin="glass"><span aria-hidden="true">≋</span><span>玻璃潮汐</span></button>
-        </div>
-
         <div class="touch-album-panel" aria-label="曲目列表">
           <div class="touch-album-heading">
             <span class="touch-album-kicker">ALBUM / TRACK SELECT</span>
@@ -106,17 +140,6 @@
 
     </section>
 
-    <footer class="stage-footer">
-      <div class="progress-block">
-        <div class="progress-track"><i id="progressFill"></i></div>
-        <div class="time-row">
-          <span id="currentTime">00:00</span>
-          <span id="durationTime">00:00</span>
-        </div>
-      </div>
-      <div class="footer-note" id="footerNote">PRESS → TO CHANGE TRACK</div>
-    </footer>
-
     <!-- Legacy toggles kept for API compatibility; web controls stay visible. -->
     <button id="dockToggleLeft" class="dock-corner dock-corner-left" type="button" aria-label="显示控制面板"></button>
     <button id="dockToggleRight" class="dock-corner dock-corner-right" type="button" aria-label="显示控制面板"></button>
@@ -124,14 +147,19 @@
     <aside class="control-dock" aria-label="控制面板">
       <div class="control-row primary-controls">
         <button id="prevBtn" type="button" title="上一首（←）" aria-label="上一首">◀◀</button>
-        <button id="playBtn" class="play-button" type="button" title="播放 / 暂停（空格）" aria-label="播放">▶</button>
+        <button id="playBtn" class="play-button" type="button" title="播放 / 暂停（空格）" aria-label="播放"><span class="play-icon" aria-hidden="true"></span></button>
         <button id="nextBtn" type="button" title="下一首（→）" aria-label="下一首">▶▶</button>
       </div>
-      <div class="control-row skin-controls" role="group" aria-label="视觉皮肤">
-        <button type="button" data-set-skin="stamp" class="active">邮票档案</button>
-        <button type="button" data-set-skin="film">夜航胶片</button>
-        <button type="button" data-set-skin="glass">玻璃潮汐</button>
-      </div>
+      <footer class="stage-footer">
+        <div class="progress-block">
+          <div class="progress-track"><i id="progressFill"></i></div>
+          <div class="time-row">
+            <span id="currentTime">00:00</span>
+            <span id="durationTime">00:00</span>
+          </div>
+        </div>
+        <div class="footer-note" id="footerNote">PRESS → TO CHANGE TRACK</div>
+      </footer>
       <div class="control-row utility-controls">
         <label class="volume-control" title="音量">
           <span aria-hidden="true">◖))</span>
@@ -139,12 +167,20 @@
         </label>
         <button id="loadFolderBtn" type="button"><span aria-hidden="true">▱</span> 导入专辑</button>
         <button id="mappingBtn" type="button"><span aria-hidden="true">⚙</span> 曲目设置</button>
-        <a id="appRepoLink" class="app-repo-link" href="https://github.com/sumizomeee-rgb/melodio" target="_blank" rel="noreferrer">APP 版本</a>
-        <button id="motionBtn" type="button">动效：丰富 M</button>
-        <button id="cleanBtn" type="button">干净模式 H</button>
-      </div>
-      <div class="shortcut-help">
-        <span>空格 播放</span><span>← / → 切歌</span><span>↑ / ↓ 换皮肤</span><span>G 曲目设置</span><span>M 动效强度</span><span>H 隐藏控制</span>
+        <a id="appRepoLink" class="app-repo-link" href="https://github.com/sumizomeee-rgb/melodio" target="_blank" rel="noreferrer" aria-label="打开 APP 版本仓库"><span aria-hidden="true">↗</span><span class="control-label">APP 版本</span></a>
+        <details class="more-controls">
+          <summary aria-label="更多控制" title="更多控制">•••</summary>
+          <div class="more-controls-menu">
+            <button id="motionBtn" type="button">动效：丰富</button>
+            <button id="cleanBtn" type="button">干净模式</button>
+            <button id="backgroundPlaybackBtn" class="setting-toggle" type="button" aria-pressed="false">
+              <span>后台播放</span><span class="toggle-track" aria-hidden="true"><i></i></span><span id="backgroundPlaybackState" class="toggle-state">关</span>
+            </button>
+            <div class="shortcut-help">
+              <span>空格 播放</span><span>← / → 切歌</span><span>↑ / ↓ 换主题</span><span>G 曲目设置</span><span>M 动效</span><span>H 隐藏控制</span>
+            </div>
+          </div>
+        </details>
       </div>
     </aside>
 
@@ -154,12 +190,12 @@
         <span class="welcome-eyebrow">MELODIO · OFFLINE ALBUM SHOWCASE</span>
         <h2 id="welcomeTitle">Melodio 专辑现场展示器</h2>
         <div id="albumPicker" class="album-picker"></div>
-        <p>选择一个包含歌曲和图片的文件夹。歌曲按 <b>01 歌名.wav</b> 命名，页面会直接显示“歌名”。图片可以少于歌曲，并可在“曲目设置”中逐首指定图片与试听起点。</p>
+        <p>选择一个包含歌曲和图片的文件夹。支持 MP3、WAV、FLAC、M4A、OGG 等格式；歌曲按 <b>01 歌名.flac</b> 命名时，页面会直接显示“歌名”。</p>
         <div class="welcome-actions">
           <button id="welcomeFolderBtn" class="primary" type="button">＋ 导入新专辑</button>
         </div>
         <div class="format-tip">
-          <code>01 歌名.wav</code><span>+</span><code>少图多歌也可用</code>
+          <code>01 歌名.flac</code><span>+</span><code>少图多歌也可用</code>
         </div>
       </div>
     </section>
@@ -169,9 +205,8 @@
       <div class="mapping-card">
         <header class="mapping-header">
           <div>
-            <span class="mapping-eyebrow">TRACK · ARTWORK · START POINT</span>
             <h2 id="mappingTitle">曲目与试听起点</h2>
-            <p>歌名固定读取音频文件名：<code>01 歌名.wav</code> → <b>歌名</b>。可逐首指定图片，并拖动“试听起点”决定切歌后从哪里开始播放。</p>
+            <p>歌名读取自音频文件名，例如 <code>01 歌名.flac</code> → <b>歌名</b>。可逐首指定图片和试听起点。</p>
           </div>
           <button id="mappingCloseBtn" class="mapping-close" type="button" aria-label="关闭映射面板">×</button>
         </header>
@@ -189,7 +224,7 @@
     </div>
 
     <div id="toast" class="toast" role="status"></div>
-    <input id="folderInput" type="file" webkitdirectory directory multiple hidden />
+    <input id="folderInput" type="file" webkitdirectory directory multiple accept="audio/*,.flac,image/*,.json" hidden />
     <audio id="audioA" preload="auto"></audio>
     <audio id="audioB" preload="auto"></audio>
     <audio id="previewAudio" preload="metadata"></audio>

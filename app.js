@@ -11,6 +11,7 @@
     albumTitle: $("#albumTitle"),
     artistName: $("#artistName"),
     skinName: $("#skinName"),
+    themeMenu: $("#themeMenu"),
     coverA: $("#coverA"),
     coverB: $("#coverB"),
     vinylLabel: $("#vinylLabel"),
@@ -32,6 +33,8 @@
     prevBtn: $("#prevBtn"),
     nextBtn: $("#nextBtn"),
     cleanBtn: $("#cleanBtn"),
+    backgroundPlaybackBtn: $("#backgroundPlaybackBtn"),
+    backgroundPlaybackState: $("#backgroundPlaybackState"),
     loadFolderBtn: $("#loadFolderBtn"),
     motionBtn: $("#motionBtn"),
     mappingBtn: $("#mappingBtn"),
@@ -67,7 +70,13 @@
   const SKINS = [
     { id: "stamp", name: "邮票档案" },
     { id: "film", name: "夜航胶片" },
-    { id: "glass", name: "玻璃潮汐" }
+    { id: "glass", name: "玻璃潮汐" },
+    { id: "terminal", name: "午夜终端" },
+    { id: "riso", name: "孔版唱片" },
+    { id: "carbon", name: "黑频控制台" },
+    { id: "instrument", name: "精密器材" },
+    { id: "pulse", name: "脉冲暖流" },
+    { id: "prism", name: "液态棱镜" }
   ];
 
   const AUDIO_EXT = new Set(["mp3", "wav", "m4a", "aac", "ogg", "flac", "opus"]);
@@ -115,6 +124,7 @@
     transitionToken: 0,
     skinIndex: 0,
     clean: false,
+    backgroundPlayback: false,
     dockVisible: false,
     objectUrls: [],
     audioContext: null,
@@ -638,11 +648,18 @@
 
   function updateTrackListState(index) {
     if (!els.trackList) return;
+    const followFocus = els.trackList.contains(document.activeElement);
+    let activeRow = null;
     els.trackList.querySelectorAll(".touch-track-row").forEach((row, rowIndex) => {
       const active = rowIndex === index;
       row.classList.toggle("is-active", active);
       row.setAttribute("aria-selected", String(active));
+      if (active) activeRow = row;
     });
+    if (followFocus && activeRow) {
+      activeRow.focus({ preventScroll: true });
+      activeRow.scrollIntoView({ block: "nearest" });
+    }
     const track = state.tracks[index];
     if (els.touchNowIndex) els.touchNowIndex.textContent = pad(index + 1);
     if (els.touchNowTitle) els.touchNowTitle.textContent = track?.title || "—";
@@ -684,6 +701,14 @@
     els.body.style.setProperty("--track-hue", `${(index * 47 + (track.artIndex || 0) * 31) % 360}deg`);
     els.footerNote.textContent = state.playing ? "FFT LIVE · PRESS → TO CHANGE TRACK" : "SPACE TO PLAY · H TO HIDE UI";
     document.title = `${els.trackTitle.textContent} · ${els.albumTitle.textContent}`;
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: els.trackTitle.textContent,
+        artist: els.artistName.textContent,
+        album: els.albumTitle.textContent,
+        artwork: track.image ? [{ src: track.image }] : []
+      });
+    }
     updateTrackListState(index);
   }
 
@@ -919,11 +944,19 @@
   }
 
   function updatePlayButton() {
-    els.playBtn.textContent = state.playing ? "Ⅱ" : "▶";
     els.playBtn.setAttribute("aria-label", state.playing ? "暂停" : "播放");
     els.body.classList.toggle("is-playing", state.playing);
     els.footerNote.textContent = state.playing ? "VINYL SPINNING · PRESS → TO CHANGE TRACK" : "SPACE TO PLAY · H TO HIDE UI";
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = state.playing ? "playing" : "paused";
     requestVisualFrame(true);
+  }
+
+  function setBackgroundPlayback(enabled, announce = true) {
+    state.backgroundPlayback = Boolean(enabled);
+    els.backgroundPlaybackState.textContent = state.backgroundPlayback ? "开" : "关";
+    els.backgroundPlaybackBtn.setAttribute("aria-pressed", String(state.backgroundPlayback));
+    try { localStorage.setItem("melodio-background-playback", state.backgroundPlayback ? "1" : "0"); } catch (_) {}
+    if (announce) showToast(state.backgroundPlayback ? "已允许离开标签页后继续播放" : "离开标签页时将自动暂停");
   }
 
   function nextTrack(direction = 1) {
@@ -946,6 +979,7 @@
     els.body.dataset.skin = id;
     els.skinName.textContent = SKINS[index].name;
     $$('[data-set-skin]').forEach((button) => button.classList.toggle("active", button.dataset.setSkin === id));
+    try { localStorage.setItem("melodio-skin", id); } catch (_) {}
     requestVisualFrame(true);
     if (announce) showToast(`视觉皮肤：${SKINS[index].name}`);
   }
@@ -1867,7 +1901,7 @@
     ctx.clearRect(0, 0, w, h);
     const skin = els.body.dataset.skin;
 
-    if (skin === "stamp") {
+    if (skin === "stamp" || skin === "riso") {
       ctx.lineWidth = 1;
       const rowCount = PERFORMANCE.enabled ? 5 : 7;
       const lineStep = PERFORMANCE.enabled ? 24 : 14;
@@ -1888,7 +1922,7 @@
         ctx.strokeStyle = `rgba(168,64,48,${.025 + flux * .07})`;
         ctx.stroke();
       }
-    } else if (skin === "film") {
+    } else if (skin === "film" || skin === "terminal") {
       const gradient = ctx.createRadialGradient(w * .22, h * .26, 0, w * .22, h * .26, w * .54);
       gradient.addColorStop(0, `rgba(236, 155, 87, ${.04 + energy * .18 + impact * .08})`);
       gradient.addColorStop(.45, `rgba(100, 72, 53, ${.01 + low * .05})`);
@@ -2051,7 +2085,7 @@
     els.dockToggleRight?.addEventListener("click", () => toggleDock());
     // 点击控制面板自身的黑色背景(非按钮区域)也关闭面板
     els.controlDock?.addEventListener("click", (event) => {
-      if (event.target instanceof Element && !event.target.closest("button")) toggleDock(false);
+      if (event.target instanceof Element && !event.target.closest("button, a, input, select, summary")) toggleDock(false);
     });
 
     els.trackList?.addEventListener("click", (event) => {
@@ -2120,7 +2154,11 @@
       if (event.target === els.mappingPanel) setMappingOpen(false);
     });
     els.cleanBtn.addEventListener("click", toggleClean);
-    $$('[data-set-skin]').forEach((button) => button.addEventListener("click", () => setSkin(button.dataset.setSkin)));
+    els.backgroundPlaybackBtn.addEventListener("click", () => setBackgroundPlayback(!state.backgroundPlayback));
+    $$('[data-set-skin]').forEach((button) => button.addEventListener("click", () => {
+      setSkin(button.dataset.setSkin);
+      els.themeMenu?.removeAttribute("open");
+    }));
 
     document.addEventListener("keydown", (event) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -2170,7 +2208,7 @@
     });
 
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden && state.playing) {
+      if (document.hidden && state.playing && !state.backgroundPlayback) {
         togglePlay();
         showToast("页面离开前台，已自动暂停，避免录制错位", 3200);
       } else if (!document.hidden) {
@@ -2203,7 +2241,18 @@
     bindEvents();
     bindProgressSeek();
     resizeCanvas();
-    setSkin("stamp", false);
+    let initialSkin = "stamp";
+    try { initialSkin = localStorage.getItem("melodio-skin") || initialSkin; } catch (_) {}
+    setSkin(initialSkin, false);
+    let backgroundPlayback = false;
+    try { backgroundPlayback = localStorage.getItem("melodio-background-playback") === "1"; } catch (_) {}
+    setBackgroundPlayback(backgroundPlayback, false);
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.setActionHandler("play", () => { if (!state.playing) togglePlay(); });
+      navigator.mediaSession.setActionHandler("pause", () => { if (state.playing) togglePlay(); });
+      navigator.mediaSession.setActionHandler("previoustrack", () => nextTrack(-1));
+      navigator.mediaSession.setActionHandler("nexttrack", () => nextTrack(1));
+    }
     requestVisualFrame(true);
     const params = new URLSearchParams(location.search);
     // 所有专辑都来自安装后的外部导入：有导入 → 直接载入；没有 → 显示欢迎/导入面板

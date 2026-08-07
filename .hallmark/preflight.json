@@ -1,0 +1,10 @@
+{
+  "date": "2026-08-07",
+  "framework": "vanilla HTML/CSS/JS",
+  "fontStack": "system serif + sans + mono",
+  "palette": "semantic OKLCH tokens with nine anonymous skins",
+  "motion": "native CSS and Canvas; no motion dependency",
+  "spacing": "mixed legacy values; normalized by Hallmark tokens",
+  "study": "DIZZYLAB, NTS, Apple materials, physical transmission",
+  "responsive": "verified at 320, 375, 414, 768, 1200-square and 1280-wide"
+}
