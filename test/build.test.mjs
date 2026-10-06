@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-for (const file of ["index.html", "tokens.css", "styles.css", "app.js", "i18n.js", "filename-utils.js", "manifest.webmanifest", "service-worker.js", "icons/icon-192.png", "icons/icon-512.png"]) {
+for (const file of ["index.html", "tokens.css", "styles.css", "app.js", "i18n.js", "filename-utils.js", "manifest.webmanifest", "service-worker.js", "icons/icon-192.png", "icons/icon-512.png", "skins/poster.css", "skins/obi.css", "skins/gallery.css", "skins/liner.css"]) {
   await access(resolve("dist", file));
 }
 const html = await readFile(resolve("dist/index.html"), "utf8");
@@ -14,6 +14,10 @@ assert.match(html, /id="themeMenu"/);
 assert.match(html, /data-set-skin="terminal"/);
 assert.match(html, /data-set-skin="riso"/);
 assert.match(html, /data-set-skin="prism"/);
+for (const skin of ["poster", "obi", "gallery", "liner"]) {
+  assert.match(html, new RegExp(`data-set-skin="${skin}"`));
+  assert.match(html, new RegExp(`href="skins/${skin}\\.css"`));
+}
 assert.match(html, /id="backgroundPlaybackBtn"/);
 assert.match(css, /max-height:\s*min\(60vh, 30rem\)/);
 assert.match(css, /overflow-y:\s*auto/);

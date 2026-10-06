@@ -37,6 +37,8 @@
     cleanBtn: $("#cleanBtn"),
     backgroundPlaybackBtn: $("#backgroundPlaybackBtn"),
     backgroundPlaybackState: $("#backgroundPlaybackState"),
+    duotoneBtn: $("#duotoneBtn"),
+    duotoneState: $("#duotoneState"),
     loadFolderBtn: $("#loadFolderBtn"),
     motionBtn: $("#motionBtn"),
     languageBtn: $("#languageBtn"),
@@ -71,6 +73,10 @@
   };
 
   const SKINS = [
+    { id: "poster" },
+    { id: "obi" },
+    { id: "gallery" },
+    { id: "liner" },
     { id: "stamp" },
     { id: "film" },
     { id: "glass" },
@@ -129,6 +135,7 @@
     skinIndex: 0,
     clean: false,
     backgroundPlayback: false,
+    duotone: false,
     dockVisible: false,
     objectUrls: [],
     audioContext: null,
@@ -147,6 +154,8 @@
     imageCount: 0,
     availableImages: [],
     decodedImages: new Map(),
+    artPalettes: new Map(),
+    artPaletteToken: 0,
     deckTrackIndices: [-1, -1],
     mappingOpen: false,
     previewTrackIndex: -1,
@@ -216,6 +225,7 @@
     for (const url of state.objectUrls) URL.revokeObjectURL(url);
     state.objectUrls = [];
     state.decodedImages.clear();
+    state.artPalettes.clear();
     state.deckTrackIndices = [-1, -1];
   }
 
@@ -689,6 +699,65 @@
     }
   }
 
+  /** 从封面取色:均值作底色、最饱和的像素簇作强调色,结果按 URL 缓存 */
+  function extractArtPalette(url) {
+    if (!url) return Promise.resolve(null);
+    if (state.artPalettes.has(url)) return state.artPalettes.get(url);
+    const promise = new Promise((resolve) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.onload = () => {
+        try {
+          const size = 24;
+          const canvas = document.createElement("canvas");
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(image, 0, 0, size, size);
+          const data = ctx.getImageData(0, 0, size, size).data;
+          let r = 0, g = 0, b = 0, best = null, bestScore = -1;
+          for (let i = 0; i < data.length; i += 4) {
+            const [pr, pg, pb] = [data[i], data[i + 1], data[i + 2]];
+            r += pr; g += pg; b += pb;
+            const max = Math.max(pr, pg, pb);
+            const min = Math.min(pr, pg, pb);
+            const score = (max - min) * (1 - Math.abs(max + min - 255) / 255);
+            if (score > bestScore) { bestScore = score; best = [pr, pg, pb]; }
+          }
+          const count = data.length / 4;
+          const base = [r / count, g / count, b / count].map(Math.round);
+          const luminance = (0.2126 * base[0] + 0.7152 * base[1] + 0.0722 * base[2]) / 255;
+          resolve({ base, vivid: best || base, onBase: luminance > 0.55 ? "dark" : "light" });
+        } catch (_) {
+          resolve(null); // 跨域或被污染的画布:保留上一组颜色
+        }
+      };
+      image.onerror = () => resolve(null);
+      image.src = url;
+    });
+    state.artPalettes.set(url, promise);
+    return promise;
+  }
+
+  function applyArtPalette(url) {
+    const token = ++state.artPaletteToken;
+    extractArtPalette(url).then((palette) => {
+      if (token !== state.artPaletteToken) return;
+      const root = document.documentElement.style;
+      if (!palette) {
+        // 无封面或取色失败:清掉上一张封面的颜色,让各主题回落到自身默认色
+        if (url) state.artPalettes.delete(url);
+        root.removeProperty("--art-base");
+        root.removeProperty("--art-vivid");
+        delete document.documentElement.dataset.artTone;
+        return;
+      }
+      root.setProperty("--art-base", `rgb(${palette.base.join(" ")})`);
+      root.setProperty("--art-vivid", `rgb(${palette.vivid.join(" ")})`);
+      document.documentElement.dataset.artTone = palette.onBase;
+    });
+  }
+
   function updateTrackCopy(index) {
     const track = state.tracks[index];
     if (!track) return;
@@ -703,6 +772,7 @@
     els.nextTrackTitle.textContent = state.tracks.length > 1 ? (next?.title || `Track ${pad((index + 1) % state.tracks.length + 1)}`) : "END OF SIDE A";
     els.archiveCode.textContent = `ARCHIVE ${pad(index + 1, 3)}`;
     els.imageModeText.textContent = artCaption(track);
+    applyArtPalette(track.image);
     els.body.style.setProperty("--track-hue", `${(index * 47 + (track.artIndex || 0) * 31) % 360}deg`);
     els.footerNote.textContent = state.playing ? "FFT LIVE · PRESS → TO CHANGE TRACK" : "SPACE TO PLAY · H TO HIDE UI";
     document.title = `${els.trackTitle.textContent} · ${els.albumTitle.textContent}`;
@@ -964,6 +1034,16 @@
     if (announce) showToast(t(state.backgroundPlayback ? "toast.backgroundOn" : "toast.backgroundOff"));
   }
 
+  /** 海报主题可选的封面双色调;仅改变显示,不改动封面文件 */
+  function setDuotone(enabled, announce = true) {
+    state.duotone = Boolean(enabled);
+    els.body.dataset.duotone = String(state.duotone);
+    els.duotoneState.textContent = t(state.duotone ? "toggle.on" : "toggle.off");
+    els.duotoneBtn.setAttribute("aria-pressed", String(state.duotone));
+    try { localStorage.setItem("melodio-poster-duotone", state.duotone ? "1" : "0"); } catch (_) {}
+    if (announce) showToast(t(state.duotone ? "toast.duotoneOn" : "toast.duotoneOff"));
+  }
+
   function nextTrack(direction = 1) {
     if (!state.tracks.length) return;
     loadTrack(state.currentIndex + direction, { animate: true, autoplay: state.playing, direction });
@@ -1014,6 +1094,7 @@
     els.skinName.textContent = t(`skin.${SKINS[state.skinIndex].id}`);
     updateMotionLabel();
     els.backgroundPlaybackState.textContent = t(state.backgroundPlayback ? "toggle.on" : "toggle.off");
+    els.duotoneState.textContent = t(state.duotone ? "toggle.on" : "toggle.off");
     els.playBtn.setAttribute("aria-label", t(state.playing ? "control.pause" : "control.play"));
     if (els.welcomeDeleteBtn && !els.welcomeDeleteBtn.dataset.confirming) els.welcomeDeleteBtn.textContent = t("album.deleteSelected");
     if (state.tracks.length) renderMapping();
@@ -2193,6 +2274,7 @@
     });
     els.cleanBtn.addEventListener("click", toggleClean);
     els.backgroundPlaybackBtn.addEventListener("click", () => setBackgroundPlayback(!state.backgroundPlayback));
+    els.duotoneBtn.addEventListener("click", () => setDuotone(!state.duotone));
     $$('[data-set-skin]').forEach((button) => button.addEventListener("click", () => {
       setSkin(button.dataset.setSkin);
       els.themeMenu?.removeAttribute("open");
@@ -2281,12 +2363,16 @@
     bindEvents();
     bindProgressSeek();
     resizeCanvas();
-    let initialSkin = "stamp";
+    let initialSkin = "liner";
     try { initialSkin = localStorage.getItem("melodio-skin") || initialSkin; } catch (_) {}
+    if (!SKINS.some((skin) => skin.id === initialSkin)) initialSkin = "liner";
     setSkin(initialSkin, false);
     let backgroundPlayback = false;
     try { backgroundPlayback = localStorage.getItem("melodio-background-playback") === "1"; } catch (_) {}
     setBackgroundPlayback(backgroundPlayback, false);
+    let duotone = false;
+    try { duotone = localStorage.getItem("melodio-poster-duotone") === "1"; } catch (_) {}
+    setDuotone(duotone, false);
     if ("mediaSession" in navigator) {
       navigator.mediaSession.setActionHandler("play", () => { if (!state.playing) togglePlay(); });
       navigator.mediaSession.setActionHandler("pause", () => { if (state.playing) togglePlay(); });

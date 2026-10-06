@@ -2920,6 +2920,16 @@ body.is-playing .control-dock .primary-controls .play-icon {
   gap: var(--space-2xs);
 }
 
+/* 展开的菜单必须压过同一层叠上下文里 z-index 53 的进度条，否则移动端下半部分点不到 */
+.more-controls[open] .more-controls-menu {
+  z-index: 70 !important;
+}
+
+/* 双色调只属于海报主题，由 skins/poster.css 重新显示 */
+.more-controls-menu .duotone-toggle {
+  display: none !important;
+}
+
 .toggle-track {
   width: 2rem;
   height: 1.125rem;
@@ -3854,4 +3864,181 @@ body[data-skin="riso"] .spectrum-ruler i {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ─────────────────────────────────────────────
+   Legacy theme cleanup
+   Scope: stamp, film, glass, terminal, riso, carbon, instrument, pulse, prism ONLY.
+   Every selector below is gated on one of these data-skin values so the
+   poster / obi / gallery / liner skins (skins/*.css) are untouched.
+   1) Header + dock sit on the theme's own surface, split by a hairline.
+   2) Subtraction: glows, halos, glare, glass blur, decorative labels removed.
+   ───────────────────────────────────────────── */
+
+/* 1 · Chrome colour per theme: light paper themes get light chrome in their own ink. */
+body:is([data-skin="stamp"], [data-skin="glass"], [data-skin="riso"], [data-skin="instrument"], [data-skin="pulse"]) {
+  --legacy-chrome: var(--color-surface);
+  --legacy-chrome-ink: var(--color-ink);
+  --legacy-chrome-muted: var(--color-muted);
+}
+
+body:is([data-skin="film"], [data-skin="carbon"]) {
+  --legacy-chrome: var(--color-surface);
+  --legacy-chrome-ink: var(--color-dock-ink);
+  --legacy-chrome-muted: var(--color-dock-muted);
+}
+
+body:is([data-skin="terminal"], [data-skin="prism"]) {
+  --legacy-chrome: var(--color-canvas);
+  --legacy-chrome-ink: var(--color-dock-ink);
+  --legacy-chrome-muted: var(--color-dock-muted);
+}
+
+/* Re-point the dock tokens only inside the chrome, so modals keep their own palette. */
+html body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin="terminal"], [data-skin="riso"], [data-skin="carbon"], [data-skin="instrument"], [data-skin="pulse"], [data-skin="prism"]) :is(.stage-header, .control-dock) {
+  --color-dock: var(--legacy-chrome);
+  --color-dock-ink: var(--legacy-chrome-ink);
+  --color-dock-muted: var(--legacy-chrome-muted);
+  --web-fg: var(--legacy-chrome-ink);
+  --web-line: color-mix(in oklch, var(--legacy-chrome-ink) 22%, transparent);
+  --web-accent: var(--legacy-chrome-ink);
+  color: var(--legacy-chrome-ink);
+  background: var(--legacy-chrome);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin="terminal"], [data-skin="riso"], [data-skin="carbon"], [data-skin="instrument"], [data-skin="pulse"], [data-skin="prism"]) .stage-header {
+  border-bottom: 1px solid color-mix(in oklch, var(--legacy-chrome-ink) 16%, transparent);
+}
+
+html body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin="terminal"], [data-skin="riso"], [data-skin="carbon"], [data-skin="instrument"], [data-skin="pulse"], [data-skin="prism"]) .control-dock {
+  border-top: 1px solid color-mix(in oklch, var(--legacy-chrome-ink) 16%, transparent);
+}
+
+/* Wordmark always reads in the chrome's ink (fixes white-on-paper on mobile). */
+body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin="terminal"], [data-skin="riso"], [data-skin="carbon"], [data-skin="instrument"], [data-skin="pulse"], [data-skin="prism"]) .stage-header .wordmark {
+  color: var(--legacy-chrome-ink);
+}
+
+/* Glass: no frosted panels in the chrome or its pop-up menus. */
+html body[data-skin="glass"] :is(.control-dock, .theme-menu-list, .more-controls-menu) {
+  background: var(--legacy-chrome);
+  border-color: color-mix(in oklch, var(--legacy-chrome-ink) 18%, transparent);
+  box-shadow: 0 1rem 2.5rem var(--color-shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html body[data-skin="glass"] .control-dock {
+  box-shadow: none;
+}
+
+/* Instrument: flat, legible buttons instead of faux-bevelled ones. */
+body[data-skin="instrument"] :is(.control-dock button, .control-dock .app-repo-link, .more-controls summary) {
+  border-color: color-mix(in oklch, var(--legacy-chrome-ink) 22%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+
+body[data-skin="instrument"] .control-dock .primary-controls .play-button {
+  background: var(--legacy-chrome-ink);
+}
+
+/* 2 · Subtraction shared by all legacy themes. */
+body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin="terminal"], [data-skin="riso"], [data-skin="carbon"], [data-skin="instrument"], [data-skin="pulse"], [data-skin="prism"]) :is(.beat-halo, .art-highlight, #ambientCanvas) {
+  display: none !important;
+}
+
+body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin="terminal"], [data-skin="riso"], [data-skin="carbon"], [data-skin="instrument"], [data-skin="pulse"], [data-skin="prism"]) .spectrum-ruler::before {
+  content: none !important;
+}
+
+/* Stamp: drop the notched corners, sunburst and the ghost meter behind the track list. */
+body[data-skin="stamp"] .stage {
+  clip-path: none;
+  border: 0;
+}
+
+body[data-skin="stamp"] .spectrum-ruler,
+body[data-skin="instrument"] .spectrum-ruler {
+  display: none !important;
+}
+
+/* Glass: flat cool pane; keep the hairline pane edge, lose glare, glow and blur.
+   html:root matches the specificity of the html[data-performance="mobile"] overrides. */
+html:root body[data-skin="glass"] {
+  background: var(--color-surface);
+}
+
+html:root body[data-skin="glass"] .stage {
+  background: var(--color-surface) !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html:root body[data-skin="glass"] .art-frame {
+  background: transparent !important;
+  box-shadow: 0 1.5rem 3.5rem rgb(0 48 68 / 0.2) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html body[data-skin="glass"] .spectrum-ruler {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html:root body[data-skin="glass"] .touch-track-row::before {
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Instrument: keep the brushed field, drop the gradient bezel. */
+body[data-skin="instrument"] .art-frame {
+  background: var(--color-surface);
+  box-shadow: 0 1.25rem 2.5rem rgb(20 30 40 / 0.2);
+}
+
+/* Prism: spatial record stays; coloured glows and the purple wash go. */
+body[data-skin="prism"] .stage {
+  background: var(--color-canvas);
+}
+
+body[data-skin="prism"] .art-frame {
+  background: transparent;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), 1.8rem 2.2rem 5rem rgb(0 0 0 / 0.5);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+body[data-skin="prism"] .spectrum-ruler {
+  filter: none;
+}
+
+body[data-skin="prism"] .spectrum-ruler i {
+  box-shadow: none;
+}
+
+body[data-skin="prism"] .touch-track-row.is-active::before {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Glass: keep the meter under the track list instead of across the artwork. */
+body[data-skin="glass"] .spectrum-ruler {
+  left: 53%;
+  right: 4%;
+}
+
+/* The .7 opacity on .header-meta made the theme menu see-through over the stage. */
+body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin="terminal"], [data-skin="riso"], [data-skin="carbon"], [data-skin="instrument"], [data-skin="pulse"], [data-skin="prism"]) .header-meta {
+  opacity: 1;
 }

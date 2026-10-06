@@ -55,6 +55,14 @@
   --swatch-pulse-accent: oklch(66% 0.21 44);
   --swatch-prism-paper: oklch(16% 0.025 255);
   --swatch-prism-accent: oklch(78% 0.16 185);
+  --swatch-poster-paper: oklch(95% 0.01 95);
+  --swatch-poster-accent: oklch(58% 0.23 28);
+  --swatch-obi-paper: oklch(93% 0.02 85);
+  --swatch-obi-accent: oklch(55% 0.19 32);
+  --swatch-gallery-paper: oklch(97% 0.004 90);
+  --swatch-gallery-accent: oklch(30% 0.01 90);
+  --swatch-liner-paper: oklch(91% 0.03 80);
+  --swatch-liner-accent: oklch(40% 0.08 40);
 }
 
 body[data-skin="film"] {

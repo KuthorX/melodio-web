@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const dist = join(root, "dist");
-const files = ["index.html", "tokens.css", "styles.css", "app.js", "i18n.js", "filename-utils.js", "manifest.webmanifest", "service-worker.js", "icons"];
+const files = ["index.html", "tokens.css", "styles.css", "app.js", "i18n.js", "filename-utils.js", "manifest.webmanifest", "service-worker.js", "icons", "skins"];
 
 async function build() {
   await rm(dist, { recursive: true, force: true });

@@ -1,0 +1,371 @@
+/* Skin · obi — every rule must stay scoped to body[data-skin="obi"]. */
+
+.theme-swatch-obi { background: linear-gradient(135deg, var(--swatch-obi-paper) 0 68%, var(--swatch-obi-accent) 68%); }
+/* ---------- Tokens: ink on warm paper, one vermilion ---------- */
+body[data-skin="obi"] {
+  --obi-paper: oklch(94.5% 0.02 85);
+  --obi-strip: oklch(90.8% 0.028 80);
+  --obi-ink: oklch(21% 0.012 60);
+  --obi-vermilion: oklch(55% 0.19 32);
+  --obi-hair: color-mix(in oklch, var(--obi-ink) 26%, transparent);
+  --obi-grain:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='a'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' seed='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .36 0 0 0 0 .27 0 0 0 0 .14 0 0 0 .2 -.04'/></filter><rect width='100%' height='100%' filter='url(%23a)'/></svg>"),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='b'><feTurbulence type='fractalNoise' baseFrequency='.05 .06' numOctaves='2' seed='9' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .4 0 0 0 0 .3 0 0 0 0 .16 0 0 0 .1 -.025'/></filter><rect width='100%' height='100%' filter='url(%23b)'/></svg>");
+  --color-canvas: var(--obi-paper);
+  --color-surface: var(--obi-paper);
+  --color-surface-2: var(--obi-strip);
+  --color-ink: var(--obi-ink);
+  --color-muted: oklch(44% 0.02 60);
+  --color-rule: var(--obi-hair);
+  --color-accent: var(--obi-ink);
+  --color-focus: var(--obi-vermilion);
+  --color-dock: var(--obi-paper);
+  --color-dock-ink: var(--obi-ink);
+  --color-dock-muted: oklch(44% 0.02 60);
+  --color-overlay: oklch(24% 0.02 60 / 0.78);
+  --color-shadow: oklch(20% 0.02 60 / 0.3);
+  --font-display: "Hiragino Mincho ProN", "Songti SC", "Yu Mincho", serif;
+  --font-body: "Hiragino Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius-control: 0;
+  --radius-panel: 0;
+  --cover: min(40vw, calc(100dvh - 20rem), 640px);
+  --band: calc(var(--cover) * .13);
+  --lap: 14px;
+  --ft: calc(var(--cover) * .048);
+  --fa: max(10px, calc(var(--cover) * .025));
+  color: var(--obi-ink);
+  background-color: var(--obi-paper);
+  background-image: radial-gradient(130% 100% at 0% 0%, oklch(98.5% 0.014 90 / .75), transparent 62%), var(--obi-grain);
+}
+/* ---------- Hide what a CD edition does not have ---------- */
+body[data-skin="obi"] #ambientCanvas,
+body[data-skin="obi"] .ambient-noise,
+body[data-skin="obi"] .background-image,
+body[data-skin="obi"] .background-veil,
+body[data-skin="obi"] .vinyl-record,
+body[data-skin="obi"] .sleeve-shadow,
+body[data-skin="obi"] .spectrum-ruler,
+body[data-skin="obi"] .beat-halo,
+body[data-skin="obi"] .art-caption #imageModeText,
+body[data-skin="obi"] .legacy-track-copy > :not(#trackTitle),
+body[data-skin="obi"] .touch-hint,
+body[data-skin="obi"] .touch-album-kicker,
+body[data-skin="obi"] .touch-now-playing { display: none !important; }
+body[data-skin="obi"] .stage { background: transparent; color: var(--obi-ink); }
+/* ---------- Header: a paper strip ---------- */
+body[data-skin="obi"] .stage-header {
+  background-color: var(--obi-paper);
+  background-image: var(--obi-grain);
+  border-bottom: 1px solid var(--obi-hair);
+  backdrop-filter: none;
+}
+body[data-skin="obi"] .wordmark { font: 600 .75rem/1 var(--font-mono); letter-spacing: .34em; }
+body[data-skin="obi"] .stage-header .brand-block h1 { font: 500 var(--text-md)/1.2 var(--font-display) !important; letter-spacing: .06em; }
+body[data-skin="obi"] .stage-header .brand-block { display: none; }
+body[data-skin="obi"] .header-meta { opacity: 1 !important; grid-column: 3; }
+body[data-skin="obi"] .theme-menu summary {
+  width: 12rem;
+  min-height: 2.25rem;
+  background: transparent;
+  border-color: var(--obi-hair);
+  font-family: var(--font-mono);
+}
+body[data-skin="obi"] .theme-menu-label,
+body[data-skin="obi"] .theme-menu summary strong { font-size: .6875rem; letter-spacing: .08em; text-transform: uppercase; }
+body[data-skin="obi"] .theme-menu-list,
+body[data-skin="obi"] .more-controls-menu {
+  background-color: var(--obi-strip);
+  background-image: var(--obi-grain);
+  border-color: var(--obi-hair);
+  box-shadow: 0 .75rem 2rem -.75rem var(--color-shadow);
+}
+body[data-skin="obi"] .theme-swatch { border-radius: 0; }
+/* ---------- Composition: jewel case left, tracklist right ---------- */
+body[data-skin="obi"] .composition {
+  grid-template-columns: var(--cover) minmax(0, 34rem) !important;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(2.5rem, 6vw, 6.5rem);
+  width: 100%;
+}
+body[data-skin="obi"] .touch-album-panel { display: contents; }
+body[data-skin="obi"] .art-shell { grid-area: 1 / 1; justify-self: start; width: var(--cover) !important; max-width: none; cursor: pointer; }
+body[data-skin="obi"] .art-shell::before,
+body[data-skin="obi"] .art-shell::after { border: 0; border-radius: 0; transform: none; opacity: 1; }
+/* the paper strip */
+body[data-skin="obi"] .art-shell::before { display: none !important; }
+body[data-skin="obi"] .art-shell::after {
+  display: block !important;
+  inset: 0 calc(var(--lap) * -1) 0 auto;
+  width: calc(var(--band) + var(--lap));
+  z-index: 8;
+  background-color: var(--obi-strip);
+  background-image: var(--obi-grain);
+  box-shadow:
+    inset 5px 0 0 var(--obi-strip),
+    inset 6px 0 0 oklch(21% 0.012 60 / .55),
+    -1px 0 0 oklch(42% 0.06 55 / .7),
+    -4px 0 4px -2px oklch(25% 0.05 55 / .35),
+    1px 0 0 oklch(76% 0.03 78),
+    2px 1px 2px oklch(15% 0.01 60 / .25);
+}
+body[data-skin="obi"] .art-frame {
+  left: 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: 0 1px 2px oklch(15% 0.01 60 / .35), 0 1.4rem 2.2rem -1rem oklch(15% 0.01 60 / .45);
+  background: var(--obi-ink);
+}
+body[data-skin="obi"] .art-frame::before, body[data-skin="obi"] .art-frame::after { display: none; }
+/* jewel-case edge: a thin bright rim and a hinge line */
+body[data-skin="obi"] .art-highlight {
+  display: block;
+  left: 0;
+  width: 100%;
+  background: none;
+  mix-blend-mode: normal;
+  opacity: 1;
+  box-shadow:
+    inset 0 0 0 1px oklch(100% 0 0 / .55),
+    inset 0 1px 0 oklch(100% 0 0 / .85);
+}
+body[data-skin="obi"] .sleeve-edge { display: none; }
+/* catalog code + vermilion seal at the foot of the strip */
+body[data-skin="obi"] .art-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(var(--band) * .14);
+  left: auto;
+  right: calc(var(--lap) * -.5);
+  top: auto;
+  bottom: calc(var(--cover) * .04);
+  width: var(--band);
+  z-index: 9;
+  opacity: 1;
+  pointer-events: none;
+}
+body[data-skin="obi"] #archiveCode {
+  writing-mode: vertical-rl;
+  font: 500 9px/1 var(--font-mono);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--obi-ink);
+  white-space: nowrap;
+}
+body[data-skin="obi"] .art-caption::after {
+  content: "";
+  width: calc(var(--band) * .46);
+  aspect-ratio: 1;
+  background: var(--obi-vermilion);
+  box-shadow: inset 0 0 0 calc(var(--band) * .035) var(--obi-vermilion);
+}
+/* vertical title + album name, set on the strip */
+body[data-skin="obi"] .legacy-track-copy,
+body[data-skin="obi"] .touch-album-heading {
+  grid-area: 1 / 1;
+  justify-self: end;
+  align-self: start;
+  position: relative;
+  z-index: 10;
+  width: auto;
+  height: auto;
+  margin-top: calc(var(--cover) * .05);
+  max-height: calc(var(--cover) * .64);
+  overflow: visible;
+  clip-path: none;
+  display: block;
+  pointer-events: none;
+}
+body[data-skin="obi"] #trackTitle,
+body[data-skin="obi"] .touch-album-heading h2 {
+  display: block;
+  writing-mode: vertical-rl;
+  max-height: calc(var(--cover) * .64);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  font-family: var(--font-display);
+  color: var(--obi-ink);
+}
+body[data-skin="obi"] #trackTitle { margin-right: calc(var(--band) * .15 - var(--lap) * .5); font-size: var(--ft); font-weight: 800; line-height: 1.3; letter-spacing: 0; }
+body[data-skin="obi"] .touch-album-heading h2 {
+  margin-right: calc(var(--band) * .15 - var(--lap) * .5 + var(--ft) * 1.3 + var(--band) * .06);
+  font-size: var(--fa);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: oklch(36% 0.02 60);
+}
+/* ---------- Tracklist: liner-note rules ---------- */
+body[data-skin="obi"] .touch-track-list {
+  grid-area: 1 / 2;
+  align-self: center;
+  height: var(--cover);
+  max-height: none;
+  display: grid;
+  gap: 0;
+  grid-auto-rows: minmax(3.5rem, 6.5rem);
+  align-content: safe center;
+  border-top: 3px double var(--obi-ink);
+  border-bottom: 1px solid var(--obi-ink);
+  padding: 0;
+}
+body[data-skin="obi"] .touch-track-row {
+  min-height: 3.5rem;
+  padding: .5rem .25rem;
+  grid-template-columns: 1rem 2.2rem minmax(0, 1fr);
+  gap: .35rem;
+  border-top: 0;
+  border-bottom: 1px solid var(--obi-hair);
+  border-radius: 0;
+  color: var(--obi-ink);
+  opacity: 1 !important;
+  transition: background-color var(--dur-short) var(--ease-out);
+}
+body[data-skin="obi"] .touch-track-row:last-child { border-bottom-color: transparent; }
+body[data-skin="obi"] .touch-track-row::before,
+body[data-skin="obi"] .touch-track-row::after { display: none; }
+body[data-skin="obi"] .touch-track-row:hover { background: color-mix(in oklch, var(--obi-ink) 5%, transparent); }
+body[data-skin="obi"] .touch-track-row .number {
+  grid-column: 2;
+  grid-row: 1;
+  font: 500 .75rem/1 var(--font-mono);
+  letter-spacing: .06em;
+  color: var(--color-muted);
+  opacity: 1;
+}
+body[data-skin="obi"] .touch-track-row .title {
+  grid-column: 3;
+  grid-row: 1;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font: 500 1.0625rem/1.35 var(--font-display);
+  letter-spacing: .02em;
+  color: var(--obi-ink);
+}
+body[data-skin="obi"] .touch-track-row .state-mark {
+  grid-column: 1;
+  grid-row: 1;
+  width: .5rem;
+  height: .5rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+body[data-skin="obi"] .touch-track-row.is-active { color: var(--obi-ink); }
+body[data-skin="obi"] .touch-track-row.is-active .title { font-weight: 700; }
+body[data-skin="obi"] .touch-track-row.is-active .number { color: var(--obi-ink); }
+body[data-skin="obi"] .touch-track-row.is-active .state-mark { background: var(--obi-vermilion); }
+/* ---------- Controls: ink on paper ---------- */
+body[data-skin="obi"] .control-dock,
+body[data-skin="obi"] .control-dock.is-visible { background-color: var(--obi-paper); background-image: var(--obi-grain); border-top: 1px solid var(--obi-hair); }
+body[data-skin="obi"] .control-dock button,
+body[data-skin="obi"] .control-dock .app-repo-link,
+body[data-skin="obi"] .more-controls summary {
+  min-height: 2.25rem;
+  border-color: var(--obi-hair);
+  border-radius: 0;
+  color: var(--obi-ink);
+  font: 500 .6875rem/1 var(--font-mono);
+  letter-spacing: .06em;
+}
+body[data-skin="obi"] .control-dock button:hover,
+body[data-skin="obi"] .control-dock .app-repo-link:hover,
+body[data-skin="obi"] .more-controls summary:hover { background: color-mix(in oklch, var(--obi-ink) 7%, transparent); border-color: var(--obi-ink); }
+body[data-skin="obi"] .control-dock .primary-controls button,
+body[data-skin="obi"] .control-dock .primary-controls .play-button {
+  width: 2.5rem; min-width: 2.5rem; height: 2.5rem; min-height: 2.5rem;
+  border: 0; border-radius: 0; background: transparent; color: var(--obi-ink); font-size: .75rem;
+}
+body[data-skin="obi"] .control-dock .primary-controls button:hover { background: transparent; color: var(--color-muted); }
+body[data-skin="obi"] .progress-track { height: 2px; padding: 7px 0; background-color: var(--obi-hair); background-clip: content-box; box-sizing: content-box; }
+body[data-skin="obi"] .progress-track i { background: var(--obi-ink); }
+body[data-skin="obi"] .time-row { font-family: var(--font-mono); color: var(--color-muted); }
+body[data-skin="obi"] .volume-control input { -webkit-appearance: none; appearance: none; height: 12px; background: transparent; accent-color: var(--obi-ink); }
+body[data-skin="obi"] .volume-control input::-webkit-slider-runnable-track { height: 1px; background: var(--obi-ink); }
+body[data-skin="obi"] .volume-control input::-webkit-slider-thumb { -webkit-appearance: none; width: 8px; height: 8px; margin-top: -3.5px; border: 0; border-radius: 0; background: var(--obi-ink); }
+body[data-skin="obi"] .volume-control input::-moz-range-track { height: 1px; background: var(--obi-ink); }
+body[data-skin="obi"] .volume-control input::-moz-range-thumb { width: 8px; height: 8px; border: 0; border-radius: 0; background: var(--obi-ink); }
+body[data-skin="obi"] .toggle-track, body[data-skin="obi"] .toggle-track i { border-radius: 0; }
+/* ---------- Overlays: black jewel-case tray, paper text ---------- */
+body[data-skin="obi"] .welcome-panel,
+body[data-skin="obi"] .mapping-panel,
+body[data-skin="obi"] .drop-overlay,
+body[data-skin="obi"] .toast {
+  --color-dock-ink: oklch(94% 0.018 85);
+  --color-dock-muted: oklch(72% 0.016 80);
+  --color-dock: oklch(19% 0.012 60);
+  --color-modal: oklch(19% 0.012 60);
+  --color-modal-2: oklch(24% 0.012 60);
+  --color-accent: oklch(68% 0.17 32);
+  backdrop-filter: none;
+}
+body[data-skin="obi"] .welcome-card,
+body[data-skin="obi"] .mapping-card,
+body[data-skin="obi"] .toast { border-radius: 0; font-family: var(--font-body); }
+body[data-skin="obi"] .album-option, body[data-skin="obi"] .welcome-actions button, body[data-skin="obi"] .welcome-close { border-radius: 0; }
+body[data-skin="obi"] .welcome-actions button.primary { color: oklch(19% 0.012 60); background: oklch(94% 0.018 85); }
+/* ---------- Mobile: full-bleed cover, strip on its right edge ---------- */
+@media (max-width: 720px) {
+  body[data-skin="obi"] { --cover: calc(100vw - var(--lap)); --fa: 10px; }
+  body[data-skin="obi"] .app { padding-bottom: 9.5rem; }
+  body[data-skin="obi"] #trackTitle, body[data-skin="obi"] .touch-album-heading h2 { max-height: calc(var(--cover) * .55); }
+  body[data-skin="obi"] .control-dock, body[data-skin="obi"] .control-dock.is-visible {
+    height: auto; min-height: 0; padding: .5rem 1.25rem .75rem;
+    grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "transport" "timeline" "utilities"; gap: .25rem;
+  }
+  body[data-skin="obi"] .primary-controls { grid-template-columns: repeat(3, 2.75rem); justify-content: center; width: auto; gap: 1.5rem; grid-column: 1; }
+  body[data-skin="obi"] .stage-footer { grid-column: 1; }
+  body[data-skin="obi"] .utility-controls { grid-column: 1; align-self: center; }
+  body[data-skin="obi"] .stage { padding: 0 0 2rem !important; }
+  body[data-skin="obi"] .stage-header {
+    height: 3.5rem;
+    padding: 0 1.25rem;
+    justify-content: space-between;
+    background: transparent;
+    border-bottom: 1px solid var(--obi-hair);
+  }
+  body[data-skin="obi"] .composition { grid-template-columns: minmax(0, 1fr) !important; gap: 0; }
+  body[data-skin="obi"] .art-shell { width: var(--cover) !important; }
+  body[data-skin="obi"] .touch-track-list { grid-area: 2 / 1; margin: 1.25rem 1.25rem 0; max-height: none; height: auto; grid-auto-rows: auto; }
+  body[data-skin="obi"] .touch-track-row .title { font-size: 1.0625rem; }
+}
+@media (prefers-reduced-motion: reduce) { body[data-skin="obi"] .touch-track-row { transition: none; } }
+
+/* quiet text row: IMPORT · SETTINGS · APP  ••• */
+body[data-skin="obi"] .utility-controls { gap: 0; }
+body[data-skin="obi"] .utility-controls :is(#loadFolderBtn, #mappingBtn, .app-repo-link, .more-controls summary) {
+  width: auto;
+  height: auto;
+  min-height: 2.25rem;
+  padding: 0 .6rem;
+  border: 0;
+  background: transparent;
+  font: 500 .6875rem/1 var(--font-mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+body[data-skin="obi"] .utility-controls button [aria-hidden="true"],
+body[data-skin="obi"] .utility-controls .app-repo-link [aria-hidden="true"],
+body[data-skin="obi"] .volume-control > [aria-hidden="true"] { display: none; }
+body[data-skin="obi"] .utility-controls #mappingBtn::before,
+body[data-skin="obi"] .utility-controls .app-repo-link::before { content: "·"; margin-right: .6rem; }
+body[data-skin="obi"] .utility-controls .control-label { display: inline; }
+body[data-skin="obi"] .utility-controls .more-controls { display: flex; align-items: center; }
+body[data-skin="obi"] .utility-controls .more-controls summary { padding: 0 .4rem; }
+body[data-skin="obi"] .utility-controls :is(button, a, summary):hover { background: transparent; text-decoration: underline; text-underline-offset: .3em; }
+@media (max-width: 720px) {
+  body[data-skin="obi"] .utility-controls { display: flex; justify-content: center; flex-wrap: nowrap; }
+  body[data-skin="obi"] .utility-controls .app-repo-link .control-label { font-size: inherit; letter-spacing: inherit; }
+  body[data-skin="obi"] .utility-controls :is(#loadFolderBtn, #mappingBtn, .app-repo-link) { width: auto; height: auto; padding: 0 .3rem; font-size: .5625rem; letter-spacing: .06em; }
+  body[data-skin="obi"] .utility-controls .more-controls summary { font-size: .75rem; }
+}

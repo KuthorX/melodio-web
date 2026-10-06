@@ -20,8 +20,12 @@
   </script>
   <link rel="stylesheet" href="tokens.css" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="skins/poster.css" />
+  <link rel="stylesheet" href="skins/obi.css" />
+  <link rel="stylesheet" href="skins/gallery.css" />
+  <link rel="stylesheet" href="skins/liner.css" />
 </head>
-<body data-skin="stamp" data-clean="false">
+<body data-skin="liner" data-clean="false" data-duotone="false">
   <main id="app" class="app" aria-live="polite">
     <canvas id="ambientCanvas" aria-hidden="true"></canvas>
     <div class="ambient-noise" aria-hidden="true"></div>
@@ -40,11 +44,27 @@
         <details id="themeMenu" class="theme-menu">
           <summary aria-label="选择视觉主题" data-i18n-attr="aria-label:theme.choose">
             <span class="theme-menu-label" data-i18n="theme.label">主题</span>
-            <strong id="skinName">邮票档案</strong>
+            <strong id="skinName">内页小册</strong>
             <span class="theme-menu-chevron" aria-hidden="true">⌄</span>
           </summary>
           <div class="theme-menu-list">
-            <button type="button" data-set-skin="stamp" class="active">
+            <button type="button" data-set-skin="poster">
+              <span class="theme-swatch theme-swatch-poster" aria-hidden="true"></span>
+              <span><strong data-i18n="skin.poster"></strong><small data-i18n="skin.poster.desc"></small></span>
+            </button>
+            <button type="button" data-set-skin="obi">
+              <span class="theme-swatch theme-swatch-obi" aria-hidden="true"></span>
+              <span><strong data-i18n="skin.obi"></strong><small data-i18n="skin.obi.desc"></small></span>
+            </button>
+            <button type="button" data-set-skin="gallery">
+              <span class="theme-swatch theme-swatch-gallery" aria-hidden="true"></span>
+              <span><strong data-i18n="skin.gallery"></strong><small data-i18n="skin.gallery.desc"></small></span>
+            </button>
+            <button type="button" data-set-skin="liner" class="active">
+              <span class="theme-swatch theme-swatch-liner" aria-hidden="true"></span>
+              <span><strong data-i18n="skin.liner"></strong><small data-i18n="skin.liner.desc"></small></span>
+            </button>
+            <button type="button" data-set-skin="stamp">
               <span class="theme-swatch theme-swatch-stamp" aria-hidden="true"></span>
               <span><strong data-i18n="skin.stamp">邮票档案</strong><small data-i18n="skin.stamp.desc">暖纸、铅印与朱红标记</small></span>
             </button>
@@ -179,6 +199,9 @@
             <button id="cleanBtn" type="button" data-i18n="control.clean">干净模式</button>
             <button id="backgroundPlaybackBtn" class="setting-toggle" type="button" aria-pressed="false">
               <span data-i18n="control.backgroundPlayback">后台播放</span><span class="toggle-track" aria-hidden="true"><i></i></span><span id="backgroundPlaybackState" class="toggle-state">关</span>
+            </button>
+            <button id="duotoneBtn" class="setting-toggle duotone-toggle" type="button" aria-pressed="false">
+              <span data-i18n="control.duotone">封面双色调</span><span class="toggle-track" aria-hidden="true"><i></i></span><span id="duotoneState" class="toggle-state">关</span>
             </button>
             <div class="shortcut-help">
               <span data-i18n="shortcut.play">空格 播放</span><span data-i18n="shortcut.track">← / → 切歌</span><span data-i18n="shortcut.theme">↑ / ↓ 换主题</span><span data-i18n="shortcut.mapping">G 曲目设置</span><span data-i18n="shortcut.motion">M 动效</span><span data-i18n="shortcut.hide">H 隐藏控制</span>
