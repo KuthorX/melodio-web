@@ -3,6 +3,8 @@
 
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
+  const i18n = window.MelodioI18n;
+  const t = i18n.t;
 
   const els = {
     body: document.body,
@@ -37,6 +39,7 @@
     backgroundPlaybackState: $("#backgroundPlaybackState"),
     loadFolderBtn: $("#loadFolderBtn"),
     motionBtn: $("#motionBtn"),
+    languageBtn: $("#languageBtn"),
     mappingBtn: $("#mappingBtn"),
     mappingPanel: $("#mappingPanel"),
     mappingList: $("#mappingList"),
@@ -68,16 +71,17 @@
   };
 
   const SKINS = [
-    { id: "stamp", name: "邮票档案" },
-    { id: "film", name: "夜航胶片" },
-    { id: "glass", name: "玻璃潮汐" },
-    { id: "terminal", name: "午夜终端" },
-    { id: "riso", name: "孔版唱片" },
-    { id: "carbon", name: "黑频控制台" },
-    { id: "instrument", name: "精密器材" },
-    { id: "pulse", name: "脉冲暖流" },
-    { id: "prism", name: "液态棱镜" }
+    { id: "stamp" },
+    { id: "film" },
+    { id: "glass" },
+    { id: "terminal" },
+    { id: "riso" },
+    { id: "carbon" },
+    { id: "instrument" },
+    { id: "pulse" },
+    { id: "prism" }
   ];
+  const MOTION_MODES = ["motion.soft", "motion.rich", "motion.strong"];
 
   const AUDIO_EXT = new Set(["mp3", "wav", "m4a", "aac", "ogg", "flac", "opus"]);
   const IMAGE_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif", "svg"]);
@@ -139,6 +143,7 @@
     spectrumBars: [],
     fakePhase: 0,
     motionMode: 1,
+    motionLabelShortcut: false,
     imageCount: 0,
     availableImages: [],
     decodedImages: new Map(),
@@ -217,7 +222,7 @@
   async function initAudio() {
     if (!state.audioContext) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) throw new Error("当前浏览器不支持 Web Audio API");
+      if (!AudioContextClass) throw new Error(t("error.noWebAudio"));
 
       const context = new AudioContextClass();
       const analyser = context.createAnalyser();
@@ -296,7 +301,7 @@
     state.previewTrackIndex = -1;
     $$(".start-preview-button").forEach((button) => {
       button.classList.remove("is-playing");
-      button.textContent = "试听";
+      button.textContent = t("preview.play");
     });
   }
 
@@ -395,14 +400,14 @@
       await preview.play();
     } catch (error) {
       if (isAbortedPlayError(error)) return; // 试听被停止/切行打断,正常,静默
-      showToast(`试听失败：${error.message || error}`);
+      showToast(t("toast.previewFailed", { error: error.message || error }));
       return;
     }
     state.previewTrackIndex = trackIndex;
     $$(".start-preview-button").forEach((button) => {
       const active = Number(button.dataset.trackIndex) === trackIndex;
       button.classList.toggle("is-playing", active);
-      button.textContent = active ? "停止" : "试听";
+      button.textContent = t(active ? "preview.stop" : "preview.play");
     });
     const previewLength = duration > startAt ? Math.min(8000, Math.max(700, (duration - startAt) * 1000)) : 8000;
     state.previewTimer = setTimeout(() => stopStartPreview(), previewLength);
@@ -570,7 +575,7 @@
     ))];
     if (!sources.length) return;
 
-    showToast(`正在压缩 ${sources.length} 张视觉素材…`, 2400);
+    showToast(t("toast.compressing", { count: sources.length }), 2400);
     const mapping = new Map();
     // 串行:每张转码本身就吃满主线程,并发只会让单次长任务更长
     for (const source of sources) {
@@ -680,7 +685,7 @@
     } catch (error) {
       state.playing = wasPlaying;
       updatePlayButton();
-      showToast(`切歌失败：${error.message || error}`);
+      showToast(t("toast.switchFailed", { error: error.message || error }));
     }
   }
 
@@ -874,7 +879,7 @@
         } catch (error) {
           if (isAbortedPlayError(error)) return; // 快速切歌时 play() 被新操作打断,正常,静默
           state.playing = false;
-          showToast(`无法播放：${error.message || error}`);
+          showToast(t("toast.cannotPlay", { error: error.message || error }));
         }
       })();
     } else {
@@ -904,7 +909,7 @@
     } catch (error) {
       if (isAbortedPlayError(error)) return; // 被后续操作打断,正常,静默
       state.playing = false;
-      showToast(`无法播放：${error.message || error}`);
+      showToast(t("toast.cannotPlay", { error: error.message || error }));
       return;
     }
     if (!immediate) state.gains[deck].gain.linearRampToValueAtTime(1, now + 0.35);
@@ -915,7 +920,7 @@
   async function togglePlay() {
     stopStartPreview();
     if (!state.tracks.length) {
-      showToast("请先选择素材文件夹或导入专辑");
+      showToast(t("toast.chooseFolderFirst"));
       return;
     }
     try {
@@ -939,12 +944,12 @@
       updatePlayButton();
     } catch (error) {
       if (isAbortedPlayError(error)) return; // play/pause 快速连按互相打断,正常,静默
-      showToast(`播放失败：${error.message || error}`);
+      showToast(t("toast.playFailed", { error: error.message || error }));
     }
   }
 
   function updatePlayButton() {
-    els.playBtn.setAttribute("aria-label", state.playing ? "暂停" : "播放");
+    els.playBtn.setAttribute("aria-label", t(state.playing ? "control.pause" : "control.play"));
     els.body.classList.toggle("is-playing", state.playing);
     els.footerNote.textContent = state.playing ? "VINYL SPINNING · PRESS → TO CHANGE TRACK" : "SPACE TO PLAY · H TO HIDE UI";
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = state.playing ? "playing" : "paused";
@@ -953,10 +958,10 @@
 
   function setBackgroundPlayback(enabled, announce = true) {
     state.backgroundPlayback = Boolean(enabled);
-    els.backgroundPlaybackState.textContent = state.backgroundPlayback ? "开" : "关";
+    els.backgroundPlaybackState.textContent = t(state.backgroundPlayback ? "toggle.on" : "toggle.off");
     els.backgroundPlaybackBtn.setAttribute("aria-pressed", String(state.backgroundPlayback));
     try { localStorage.setItem("melodio-background-playback", state.backgroundPlayback ? "1" : "0"); } catch (_) {}
-    if (announce) showToast(state.backgroundPlayback ? "已允许离开标签页后继续播放" : "离开标签页时将自动暂停");
+    if (announce) showToast(t(state.backgroundPlayback ? "toast.backgroundOn" : "toast.backgroundOff"));
   }
 
   function nextTrack(direction = 1) {
@@ -969,7 +974,7 @@
     const track = state.tracks[state.currentIndex];
     const audio = els.audio[state.activeDeck];
     setAudioPosition(audio, track);
-    showToast("已回到当前试听起点");
+    showToast(t("toast.replay"));
   }
 
   function setSkin(id, announce = true) {
@@ -977,11 +982,11 @@
     if (index < 0) return;
     state.skinIndex = index;
     els.body.dataset.skin = id;
-    els.skinName.textContent = SKINS[index].name;
+    els.skinName.textContent = t(`skin.${id}`);
     $$('[data-set-skin]').forEach((button) => button.classList.toggle("active", button.dataset.setSkin === id));
     try { localStorage.setItem("melodio-skin", id); } catch (_) {}
     requestVisualFrame(true);
-    if (announce) showToast(`视觉皮肤：${SKINS[index].name}`);
+    if (announce) showToast(t("toast.skin", { name: t(`skin.${id}`) }));
   }
 
   function cycleSkin(direction) {
@@ -989,19 +994,41 @@
     setSkin(SKINS[index].id);
   }
 
+  function updateMotionLabel(withShortcut = state.motionLabelShortcut) {
+    state.motionLabelShortcut = withShortcut;
+    const mode = t(MOTION_MODES[state.motionMode]);
+    els.motionBtn.textContent = t(withShortcut ? "motion.buttonShortcut" : "motion.button", { mode });
+  }
+
   function cycleMotionMode() {
-    const names = ["柔和", "丰富", "强烈"];
-    state.motionMode = (state.motionMode + 1) % names.length;
+    state.motionMode = (state.motionMode + 1) % MOTION_MODES.length;
     document.documentElement.style.setProperty("--motion", [0.62, 1, 1.38][state.motionMode]);
-    els.motionBtn.textContent = `动效：${names[state.motionMode]} M`;
+    updateMotionLabel(true);
     requestVisualFrame(true);
-    showToast(`音频响应动效：${names[state.motionMode]}`);
+    showToast(t("motion.changed", { mode: t(MOTION_MODES[state.motionMode]) }));
+  }
+
+  /** 切换界面语言后刷新所有由脚本写入的文案 */
+  function refreshLocalizedText() {
+    i18n.apply();
+    els.skinName.textContent = t(`skin.${SKINS[state.skinIndex].id}`);
+    updateMotionLabel();
+    els.backgroundPlaybackState.textContent = t(state.backgroundPlayback ? "toggle.on" : "toggle.off");
+    els.playBtn.setAttribute("aria-label", t(state.playing ? "control.pause" : "control.play"));
+    if (els.welcomeDeleteBtn && !els.welcomeDeleteBtn.dataset.confirming) els.welcomeDeleteBtn.textContent = t("album.deleteSelected");
+    if (state.tracks.length) renderMapping();
+  }
+
+  function toggleLanguage() {
+    i18n.setLanguage(i18n.nextLanguage());
+    refreshLocalizedText();
+    showToast(t("language.changed"));
   }
 
   function toggleClean() {
     state.clean = !state.clean;
     els.body.dataset.clean = String(state.clean);
-    showToast(state.clean ? "已进入干净录制模式 · 按 H 恢复控制" : "已显示控制面板");
+    showToast(t(state.clean ? "toast.cleanOn" : "toast.cleanOff"));
   }
 
   function recomputeArtGroups() {
@@ -1024,7 +1051,7 @@
 
   function setMappingOpen(open) {
     if (open && !state.tracks.length) {
-      showToast("请先载入歌曲和图片");
+      showToast(t("toast.loadTracksFirst"));
       return;
     }
     state.mappingOpen = Boolean(open);
@@ -1063,7 +1090,7 @@
       copy.append(title, filename);
 
       const select = document.createElement("select");
-      select.setAttribute("aria-label", `${track.title} 使用的图片`);
+      select.setAttribute("aria-label", t("mapping.imageFor", { title: track.title }));
       if (state.availableImages.length) {
         state.availableImages.forEach((asset, assetIndex) => {
           const option = document.createElement("option");
@@ -1074,7 +1101,7 @@
         });
       } else {
         const option = document.createElement("option");
-        option.textContent = "程序化视觉（当前没有图片素材）";
+        option.textContent = t("mapping.noImages");
         select.append(option);
         select.disabled = true;
       }
@@ -1100,15 +1127,15 @@
 
       const startLabel = document.createElement("span");
       startLabel.className = "start-label";
-      startLabel.textContent = "试听起点";
+      startLabel.textContent = t("mapping.startLabel");
 
       const previewButton = document.createElement("button");
       previewButton.type = "button";
       previewButton.className = "start-preview-button";
       previewButton.dataset.trackIndex = String(trackIndex);
-      previewButton.textContent = state.previewTrackIndex === trackIndex && !els.previewAudio.paused ? "停止" : "试听";
+      previewButton.textContent = state.previewTrackIndex === trackIndex && !els.previewAudio.paused ? t("preview.stop") : t("preview.play");
       previewButton.classList.toggle("is-playing", state.previewTrackIndex === trackIndex && !els.previewAudio.paused);
-      previewButton.addEventListener("click", () => previewTrackStart(trackIndex).catch((error) => showToast(`试听失败：${error.message || error}`)));
+      previewButton.addEventListener("click", () => previewTrackStart(trackIndex).catch((error) => showToast(t("toast.previewFailed", { error: error.message || error }))));
 
       const timeline = document.createElement("div");
       timeline.className = "start-timeline";
@@ -1120,13 +1147,13 @@
       range.step = "0.1";
       range.value = String(Number(track.startAt) || 0);
       range.disabled = true;
-      range.setAttribute("aria-label", `${track.title} 的试听起点`);
+      range.setAttribute("aria-label", t("mapping.startFor", { title: track.title }));
       const scale = document.createElement("div");
       scale.className = "start-scale";
       const zero = document.createElement("span");
       zero.textContent = "00:00";
       const durationText = document.createElement("span");
-      durationText.textContent = "读取时长…";
+      durationText.textContent = t("mapping.loadingDuration");
       scale.append(zero, durationText);
       timeline.append(range, scale);
 
@@ -1135,8 +1162,8 @@
       timeInput.type = "text";
       timeInput.inputMode = "decimal";
       timeInput.value = formatTimePrecise(Number(track.startAt) || 0);
-      timeInput.setAttribute("aria-label", `${track.title} 的试听起点时间`);
-      timeInput.title = "可输入 01:23.5 或直接输入秒数";
+      timeInput.setAttribute("aria-label", t("mapping.startTimeFor", { title: track.title }));
+      timeInput.title = t("mapping.startTimeHint");
 
       const nudge = document.createElement("div");
       nudge.className = "start-nudge";
@@ -1177,7 +1204,7 @@
         const maximum = duration > 0 ? Math.max(0, duration - 0.05) : 0;
         range.max = String(maximum || 1);
         range.disabled = !(duration > 0);
-        durationText.textContent = duration > 0 ? formatTime(duration) : "时长不可用";
+        durationText.textContent = duration > 0 ? formatTime(duration) : t("mapping.durationUnavailable");
         updateStartUI(Number(track.startAt) || 0);
       });
     });
@@ -1186,7 +1213,7 @@
   function resetAllStartPoints() {
     state.tracks.forEach((track, index) => applyTrackStart(index, 0));
     renderMapping();
-    showToast("所有歌曲的试听起点已回到 00:00");
+    showToast(t("toast.startsReset"));
   }
 
   async function autoMapImages() {
@@ -1210,11 +1237,11 @@
       updateTrackCopy(state.currentIndex);
     }
     renderMapping();
-    showToast("已按连续章节重新分配图片");
+    showToast(t("toast.autoMapped"));
   }
 
   async function setTracks(tracks, meta = {}) {
-    if (!tracks.length) throw new Error("没有找到可播放的歌曲文件");
+    if (!tracks.length) throw new Error(t("error.noPlayableTracks"));
 
     stopStartPreview(true);
     for (const audio of els.audio) {
@@ -1252,26 +1279,26 @@
     updatePlayButton();
     setWelcomeVisible(false);
 
-    showToast(`正在预解码 ${state.availableImages.length || state.imageCount} 张图片…`, 1800);
+    showToast(t("toast.predecoding", { count: state.availableImages.length || state.imageCount }), 1800);
     await preloadImages([
       ...state.availableImages.flatMap((asset) => [asset.url, asset.backgroundUrl]),
       ...tracks.flatMap((track) => [track.image, track.backgroundImage])
     ]);
     await loadTrack(0, { animate: false, autoplay: true });
-    showToast(`已载入 ${tracks.length} 首歌曲 · ${state.imageCount} 张视觉素材 · 图片与下一首音频已预热`, 3600);
+    showToast(t("toast.loaded", { tracks: tracks.length, images: state.imageCount }), 3600);
   }
 
   async function parseFolderFiles(fileList) {
     const files = [...fileList];
     const audioFiles = files.filter((file) => AUDIO_EXT.has(extension(file.name))).sort((a, b) => naturalCompare(a.name, b.name));
     const imageFiles = files.filter((file) => IMAGE_EXT.has(extension(file.name))).sort((a, b) => naturalCompare(a.name, b.name));
-    if (!audioFiles.length) throw new Error("文件夹中没有识别到 MP3、WAV、M4A、OGG 等音频文件");
+    if (!audioFiles.length) throw new Error(t("error.noAudioInFolder"));
 
     let manifest = null;
     const manifestFile = files.find((file) => file.name.toLowerCase() === "album.json");
     if (manifestFile) {
       try { manifest = JSON.parse(await manifestFile.text()); }
-      catch (_) { showToast("album.json 解析失败，已改用自动分配"); }
+      catch (_) { showToast(t("toast.manifestInvalid")); }
     }
 
     revokeObjectUrls();
@@ -1293,7 +1320,7 @@
       return cache.get(file);
     };
 
-    if (imageFiles.length) showToast(`正在为录屏优化 ${imageFiles.length} 张图片…`, 2400);
+    if (imageFiles.length) showToast(t("toast.optimizingImages", { count: imageFiles.length }), 2400);
     const imageAssets = await Promise.all(imageFiles.map((file, index) => prepareImageAsset(file, index)));
     const imageAssetByFile = new Map(imageFiles.map((file, index) => [file, imageAssets[index]]));
 
@@ -1365,9 +1392,9 @@
     });
 
     if (imageFiles.length && imageFiles.length < audioFiles.length) {
-      showToast(`${audioFiles.length} 首歌 / ${imageFiles.length} 张图：已按连续章节分配，可按 G 逐首调整`, 4600);
+      showToast(t("toast.chapterMapped", { tracks: audioFiles.length, images: imageFiles.length }), 4600);
     } else if (!imageFiles.length) {
-      showToast("未找到图片：已为每首歌生成程序化视觉底图", 4200);
+      showToast(t("toast.noImages"), 4200);
     }
   }
 
@@ -1386,7 +1413,15 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "album-option is-imported";
-      btn.innerHTML = `<span class="album-option-title">${title}</span><span class="album-option-meta">导入专辑 · ${count} 首 · 再次点击载入</span>`;
+      const titleEl = document.createElement("span");
+      titleEl.className = "album-option-title";
+      titleEl.textContent = title;
+      const metaEl = document.createElement("span");
+      metaEl.className = "album-option-meta";
+      metaEl.dataset.i18n = "album.importedMeta";
+      metaEl.dataset.i18nVars = JSON.stringify({ count });
+      metaEl.textContent = t("album.importedMeta", { count });
+      btn.append(titleEl, metaEl);
       btn.addEventListener("click", () => {
         const wasSelected = btn.classList.contains("is-selected");
         selectAlbumCard(btn, "imported", title);
@@ -1399,7 +1434,8 @@
     if (!nativeImport) {
       const hint = document.createElement("div");
       hint.className = "album-empty";
-      hint.textContent = "还没有专辑 · 点下方「＋ 导入新专辑」选择素材文件夹";
+      hint.dataset.i18n = "album.empty";
+      hint.textContent = t("album.empty");
       picker.appendChild(hint);
       setWelcomeVisible(true);
       return;
@@ -1409,7 +1445,7 @@
       .then((resp) => (resp.ok ? resp.json() : null))
       .then((manifest) => {
         if (manifest && Array.isArray(manifest.tracks) && manifest.tracks.length) {
-          appendImportedCard(manifest.albumTitle || manifest.title || "导入的专辑", manifest.tracks.length);
+          appendImportedCard(manifest.albumTitle || manifest.title || t("album.importedTitle"), manifest.tracks.length);
           return;
         }
         // 没有 album.json 的导入(纯素材自动配对)→ 用素材清单生成卡片
@@ -1418,7 +1454,7 @@
           .then((listing) => {
             if (!listing || !Array.isArray(listing.files)) return;
             const audioCount = listing.files.filter((name) => AUDIO_EXT.has(extension(name))).length;
-            if (audioCount) appendImportedCard(listing.title || "导入的专辑", audioCount);
+            if (audioCount) appendImportedCard(listing.title || t("album.importedTitle"), audioCount);
           });
       })
       .catch(() => {})
@@ -1427,7 +1463,8 @@
         if (!picker.children.length) {
           const hint = document.createElement("div");
           hint.className = "album-empty";
-          hint.textContent = "还没有专辑 · 点下方「＋ 导入新专辑」选择素材文件夹";
+          hint.dataset.i18n = "album.empty";
+          hint.textContent = t("album.empty");
           picker.appendChild(hint);
         }
       });
@@ -1448,17 +1485,17 @@
   function handleDeleteSelected() {
     const sel = selectedAlbum;
     if (!sel) {
-      showToast("请先选择要删除的专辑", 2600);
+      showToast(t("album.selectToDelete"), 2600);
       return;
     }
     const btn = els.welcomeDeleteBtn;
     if (!btn.dataset.confirming) {
       btn.dataset.confirming = "1";
-      btn.textContent = "确认删除?";
+      btn.textContent = t("album.confirmDelete");
       setTimeout(() => {
         if (btn.dataset.confirming) {
           btn.dataset.confirming = "";
-          btn.textContent = "删除所选专辑";
+          btn.textContent = t("album.deleteSelected");
         }
       }, 5000);
       return;
@@ -1468,15 +1505,15 @@
     fetch("/import/__delete__", { method: "POST" })
       .then((resp) => {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        showToast("已删除导入专辑");
+        showToast(t("album.deleted"));
         setTimeout(() => {
           location.href = "https://appassets.androidplatform.net/assets/www/index.html";
         }, 700);
       })
       .catch((error) => {
-        showToast(`删除失败：${error.message}`, 4200);
+        showToast(t("toast.deleteFailed", { error: error.message }), 4200);
         btn.disabled = false;
-        btn.textContent = "删除所选专辑";
+        btn.textContent = t("album.deleteSelected");
       });
   }
 
@@ -1528,10 +1565,10 @@
         const resp = await fetch("/import/__list__");
         if (resp.ok) listing = await resp.json();
       } catch (_) {}
-      if (!listing || !Array.isArray(listing.files)) throw new Error("找不到 album.json 或素材清单");
+      if (!listing || !Array.isArray(listing.files)) throw new Error(t("error.noManifest"));
       const audioNames = listing.files.filter((name) => AUDIO_EXT.has(extension(name))).sort(naturalCompare);
       const imageNames = listing.files.filter((name) => IMAGE_EXT.has(extension(name))).sort(naturalCompare);
-      if (!audioNames.length) throw new Error("文件夹中没有音频文件");
+      if (!audioNames.length) throw new Error(t("error.noAudioFiles"));
       const chapters = imageNames.length < audioNames.length;
       const tracks = audioNames.map((name, index) => {
         let artIndex = 0;
@@ -1565,12 +1602,12 @@
       });
       await downscaleTrackImages(tracks);
       await setTracks(tracks, {
-        albumTitle: listing.title || "导入专辑",
+        albumTitle: listing.title || t("album.importedFallback"),
         artist: "IMPORTED"
       });
-      if (!imageNames.length) showToast("未找到图片：已为每首歌生成程序化视觉底图", 4200);
+      if (!imageNames.length) showToast(t("toast.noImages"), 4200);
     } catch (error) {
-      showToast(`导入专辑加载失败：${error.message}`, 4200);
+      showToast(t("toast.importedLoadFailed", { error: error.message }), 4200);
     }
   }
 
@@ -2146,6 +2183,7 @@
       els.previewAudio.volume = volume;
     });
     els.motionBtn.addEventListener("click", cycleMotionMode);
+    els.languageBtn?.addEventListener("click", toggleLanguage);
     els.mappingBtn.addEventListener("click", () => setMappingOpen(!state.mappingOpen));
     els.mappingCloseBtn.addEventListener("click", () => setMappingOpen(false));
     els.autoMapBtn.addEventListener("click", () => autoMapImages().catch((error) => showToast(error.message || String(error))));
@@ -2210,7 +2248,7 @@
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && state.playing && !state.backgroundPlayback) {
         togglePlay();
-        showToast("页面离开前台，已自动暂停，避免录制错位", 3200);
+        showToast(t("toast.autoPaused"), 3200);
       } else if (!document.hidden) {
         requestVisualFrame(true);
       }
@@ -2222,12 +2260,12 @@
         // 换歌/预热时 src 被替换导致的加载中断是正常操作(abort),不打扰用户;
         // 只在「正在播放的 deck 且不在切歌过渡中」报错才提示,真故障还会走 play() 的 toast。
         if (deckIndex !== state.activeDeck || state.transitioning) return;
-        showToast(`音频加载失败（代码 ${audio.error.code}）`);
+        showToast(t("toast.audioLoadFailed", { code: audio.error.code }));
       });
     });
     els.previewAudio.addEventListener("ended", () => stopStartPreview());
     els.previewAudio.addEventListener("error", () => {
-      if (els.previewAudio.error) showToast(`试听加载失败（代码 ${els.previewAudio.error.code}）`);
+      if (els.previewAudio.error) showToast(t("toast.previewLoadFailed", { code: els.previewAudio.error.code }));
       stopStartPreview();
     });
 
@@ -2238,6 +2276,8 @@
   function bootstrap() {
     els.spectrumRuler.innerHTML = Array.from({ length: state.spectrum.length }, () => "<i></i>").join("");
     state.spectrumBars = [...els.spectrumRuler.children];
+    i18n.apply();
+    updateMotionLabel(false);
     bindEvents();
     bindProgressSeek();
     resizeCanvas();
@@ -2259,7 +2299,7 @@
     if (params.get("imported") === "1") {
       loadImportedAlbum();
     } else {
-      showToast("请先导入专辑：点「＋ 导入新专辑」选择素材文件夹", 4200);
+      showToast(t("toast.importFirst"), 4200);
       openAlbumOverview();
     }
   }

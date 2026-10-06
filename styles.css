@@ -2158,8 +2158,8 @@ body[data-clean="true"] .stage-footer { display: none !important; }
   .utility-controls { grid-column: 1 / -1; align-self: end; justify-content: space-between; width: 100%; }
   .utility-controls #loadFolderBtn,
   .utility-controls #mappingBtn { width: 56px; height: 50px; padding: 0; font-size: 0; }
-  .utility-controls #loadFolderBtn span,
-  .utility-controls #mappingBtn span { font-size: 24px; }
+  .utility-controls #loadFolderBtn span[aria-hidden="true"],
+  .utility-controls #mappingBtn span[aria-hidden="true"] { font-size: 24px; }
   .welcome-card,
   .mapping-card { width: calc(100% - 24px); max-height: calc(100dvh - 24px); }
 }
@@ -2541,6 +2541,11 @@ body[data-skin] .stage-header .eyebrow {
   border-radius: var(--radius-control);
   list-style: none;
   cursor: pointer;
+}
+
+/* 英文主题名更长；:where 不加权重，窄屏断点仍可覆盖宽度 */
+:where(:lang(en)) .theme-menu summary {
+  width: 14.5rem;
 }
 
 .theme-menu summary::-webkit-details-marker {
@@ -3706,8 +3711,8 @@ body[data-skin="riso"] .spectrum-ruler i {
     font-size: 0;
   }
 
-  .utility-controls #loadFolderBtn span,
-  .utility-controls #mappingBtn span,
+  .utility-controls #loadFolderBtn span[aria-hidden="true"],
+  .utility-controls #mappingBtn span[aria-hidden="true"],
   .utility-controls .app-repo-link > span:first-child {
     font-size: var(--text-lg);
   }

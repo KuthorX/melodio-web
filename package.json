@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node scripts/build.mjs --serve",
     "build": "node scripts/build.mjs",
-    "test": "node test/filename-utils.test.cjs && npm run build && node test/build.test.mjs",
+    "test": "node test/filename-utils.test.cjs && node test/i18n.test.cjs && npm run build && node test/build.test.mjs",
     "deploy:grenyes": "npm run build && node scripts/deploy-grenyes.mjs"
   }
 }
