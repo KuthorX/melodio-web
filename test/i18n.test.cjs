@@ -22,14 +22,17 @@ function load({ search = "", stored = null, languages = ["zh-CN"] } = {}) {
 
 assert.equal(load({ languages: ["zh-TW"] }).i18n.language, "zh");
 assert.equal(load({ languages: ["en-US"] }).i18n.language, "en");
-assert.equal(load({ languages: ["fr-FR"] }).i18n.language, "en");
+assert.equal(load({ languages: ["fr-FR"] }).i18n.language, "fr");
 assert.equal(load({ languages: ["en-US"], stored: "zh" }).i18n.language, "zh");
 assert.equal(load({ search: "?lang=en", stored: "zh" }).i18n.language, "en");
+for (const language of ["fr", "ru", "es", "ja", "ko"]) {
+  assert.equal(load({ search: `?lang=${language}`, languages: ["en-US"] }).i18n.language, language);
+}
 
 const { i18n, storage, document } = load({ languages: ["en-US"] });
 assert.equal(i18n.t("toast.loaded", { tracks: 3, images: 2 }), "Loaded 3 tracks · 2 visual assets · Images and next track preloaded");
 assert.equal(i18n.t("missing.key"), "missing.key");
-assert.equal(i18n.nextLanguage(), "zh");
+assert.equal(i18n.nextLanguage(), "fr");
 i18n.setLanguage("zh");
 assert.equal(i18n.language, "zh");
 assert.equal(storage.get("melodio-lang"), "zh");
@@ -40,6 +43,10 @@ const MESSAGES = extractMessages();
 const zhKeys = Object.keys(MESSAGES.zh);
 const enKeys = Object.keys(MESSAGES.en);
 assert.deepEqual([...enKeys].sort(), [...zhKeys].sort(), "zh and en dictionaries must have the same keys");
+for (const language of ["fr", "ru", "es", "ja", "ko"]) {
+  assert.ok(MESSAGES[language], `missing locale: ${language}`);
+  assert.deepEqual([...Object.keys(MESSAGES[language])].sort(), [...enKeys].sort(), `${language} dictionary must cover English keys`);
+}
 
 const html = readFileSync(resolve(__dirname, "../index.html"), "utf8");
 const usedKeys = [

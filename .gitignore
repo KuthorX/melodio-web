@@ -1,5 +1,6 @@
 dist/
 .codegraph/
+/.omc/
 .playwright-cli/
 output/
 tmp/

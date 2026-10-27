@@ -220,7 +220,10 @@
         <p data-i18n-html="welcome.body">选择一个包含歌曲和图片的文件夹。支持 MP3、WAV、FLAC、M4A、OGG 等格式；歌曲按 <b>01 歌名.flac</b> 命名时，页面会直接显示“歌名”。</p>
         <div class="welcome-actions">
           <button id="welcomeFolderBtn" class="primary" type="button" data-i18n="welcome.import">＋ 导入新专辑</button>
+          <button id="welcomeLoadBtn" type="button" data-i18n="album.loadSelected" disabled>载入所选专辑</button>
+          <button id="welcomeDeleteBtn" class="danger" type="button" data-i18n="album.deleteSelected" disabled>删除所选历史</button>
         </div>
+        <p class="library-status" id="libraryStatus" role="status" data-i18n="album.localNotice">专辑文件与配置仅保存在此浏览器，不上传。清除网站数据会删除历史。</p>
         <div class="format-tip">
           <code data-i18n="welcome.formatName">01 歌名.flac</code><span>+</span><code data-i18n="welcome.formatImages">少图多歌也可用</code>
         </div>
@@ -237,6 +240,14 @@
           </div>
           <button id="mappingCloseBtn" class="mapping-close" type="button" aria-label="关闭映射面板" data-i18n-attr="aria-label:mapping.close">×</button>
         </header>
+        <div class="global-cover-controls">
+          <label class="global-cover-control">
+            <span data-i18n="mapping.globalCover">全局封面</span>
+            <select id="globalCoverSelect" aria-label="全局封面" data-i18n-attr="aria-label:mapping.globalCover"></select>
+          </label>
+          <button id="globalCoverBtn" type="button" data-i18n="mapping.uploadCover">选择新图片</button>
+          <p data-i18n="mapping.globalCoverHint">应用到当前专辑全部曲目，之后仍可逐首调整。</p>
+        </div>
         <div id="mappingList" class="mapping-list"></div>
         <footer class="mapping-footer">
           <button id="autoMapBtn" type="button" data-i18n="mapping.autoMap">按连续章节自动分配</button>
@@ -252,6 +263,7 @@
 
     <div id="toast" class="toast" role="status"></div>
     <input id="folderInput" type="file" webkitdirectory directory multiple accept="audio/*,.flac,image/*,.json" hidden />
+    <input id="globalCoverInput" type="file" accept="image/*" hidden />
     <audio id="audioA" preload="auto"></audio>
     <audio id="audioB" preload="auto"></audio>
     <audio id="previewAudio" preload="metadata"></audio>
@@ -259,6 +271,8 @@
 
   <script src="i18n.js"></script>
   <script src="filename-utils.js"></script>
+  <script src="flac-utils.js"></script>
+  <script src="album-store.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

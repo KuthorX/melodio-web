@@ -4042,3 +4042,22 @@ body[data-skin="glass"] .spectrum-ruler {
 body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin="terminal"], [data-skin="riso"], [data-skin="carbon"], [data-skin="instrument"], [data-skin="pulse"], [data-skin="prism"]) .header-meta {
   opacity: 1;
 }
+
+/* Library and album-wide cover controls reuse the settings panel. */
+.welcome-card { max-height: calc(100dvh - 48px); overflow-y: auto; }
+.welcome-actions { flex-wrap: wrap; }
+.welcome-card .library-status { margin-top: 16px; font-size: 12px; line-height: 1.6; }
+.album-picker { max-height: 32dvh; overflow-y: auto; }
+.album-option { flex-shrink: 0; }
+.global-cover-controls { padding: 14px 30px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-line, #555); }
+.global-cover-control { display: flex; flex: 1; align-items: center; gap: 12px; min-width: 0; }
+.global-cover-control span { white-space: nowrap; font-size: 13px; }
+.global-cover-control select { min-width: 0; width: 100%; min-height: 40px; padding: 8px; }
+.global-cover-controls button { min-height: 40px; padding: 8px 14px; cursor: pointer; }
+.global-cover-controls select, .global-cover-controls button { border: 1px solid #777; border-radius: 6px; color: #f5f4ef; background: #1c1e23; }
+.global-cover-controls p { flex-basis: 100%; margin: 0; font-size: 12px; opacity: .7; }
+@media (max-width: 600px) {
+  .global-cover-controls { padding-inline: 18px; }
+  .global-cover-control { flex-basis: 100%; }
+  .mapping-footer { flex-wrap: wrap; }
+}

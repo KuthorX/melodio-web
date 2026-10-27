@@ -48,6 +48,11 @@
     mappingCloseBtn: $("#mappingCloseBtn"),
     autoMapBtn: $("#autoMapBtn"),
     resetStartsBtn: $("#resetStartsBtn"),
+    globalCoverSelect: $("#globalCoverSelect"),
+    globalCoverInput: $("#globalCoverInput"),
+    globalCoverBtn: $("#globalCoverBtn"),
+    libraryStatus: $("#libraryStatus"),
+    welcomeLoadBtn: $("#welcomeLoadBtn"),
     welcome: $("#welcome"),
     welcomeFolderBtn: $("#welcomeFolderBtn"),
     welcomeDeleteBtn: $("#welcomeDeleteBtn"),
@@ -161,6 +166,9 @@
     previewTrackIndex: -1,
     previewTimer: 0,
     albumMeta: {},
+    albumId: "",
+    extraImages: [],
+    importing: false,
     toastTimer: 0
   };
 
@@ -204,6 +212,8 @@
   }
 
   const { extension, pairingKey, titleFromFilename } = globalThis.MelodioFilename;
+  const { sanitizeFlacFile } = globalThis.MelodioFlac;
+  const albumStore = globalThis.MelodioAlbumStore;
 
   /** play() 被后续 pause()/换歌打断时浏览器抛 AbortError,属正常竞态,不应提示用户 */
   function isAbortedPlayError(error) {
@@ -369,6 +379,7 @@
     if (!track) return 0;
     const maximum = Number.isFinite(track.duration) && track.duration > 0 ? Math.max(0, track.duration - 0.05) : 1e9;
     const startAt = Math.round(clamp(Number(value) || 0, 0, maximum) * 10) / 10;
+    const changed = track.startAt !== startAt;
     track.startAt = startAt;
 
     state.deckTrackIndices.forEach((deckTrackIndex, deck) => {
@@ -382,6 +393,7 @@
       clearTimeout(state.previewTimer);
       state.previewTimer = setTimeout(() => stopStartPreview(), 8000);
     }
+    if (changed) persistCurrentAlbum();
     return startAt;
   }
 
@@ -1130,6 +1142,84 @@
     state.imageCount = new Set(state.tracks.map((track) => track.image)).size;
   }
 
+  function albumConfigFromState() {
+    return {
+      albumId: state.albumId,
+      rootName: state.albumMeta.rootName || state.albumMeta.albumTitle || "UNNAMED ALBUM",
+      albumTitle: state.albumMeta.albumTitle || "UNNAMED ALBUM",
+      artist: state.albumMeta.artist || "LOCAL SESSION",
+      extraImages: state.extraImages,
+      tracks: state.tracks.map((track) => ({
+        audio: track.sourcePath || track.sourceName || "",
+        image: track.imagePath || track.imageName || "",
+        title: track.title || "",
+        subtitle: track.subtitle || "",
+        kicker: track.kicker || "",
+        startAt: Number(track.startAt) || 0,
+        objectPosition: track.objectPosition || "",
+        variation: Number.isFinite(track.variationIndex) ? track.variationIndex : undefined,
+        artIndex: Number.isFinite(track.artIndex) ? track.artIndex : undefined
+      }))
+    };
+  }
+
+  let pendingAlbumSave = Promise.resolve();
+  function libraryStatus(key) {
+    els.libraryStatus.dataset.i18n = key;
+    els.libraryStatus.textContent = t(key);
+  }
+
+  function persistCurrentAlbum() {
+    if (!state.albumId) return;
+    const id = state.albumId;
+    const config = albumConfigFromState();
+    libraryStatus("album.saving");
+    pendingAlbumSave = pendingAlbumSave.then(() => albumStore.updateConfig(id, config))
+      .then((saved) => {
+        if (state.albumId === id) libraryStatus(saved ? "album.saved" : "album.cacheFailed");
+      }).catch(() => {
+        if (state.albumId === id) libraryStatus("album.cacheFailed");
+      });
+  }
+
+  async function importGlobalCover(file) {
+    if (!file || !state.tracks.length) return;
+    if (!IMAGE_EXT.has(extension(file.name))) throw new Error(t("error.invalidImage"));
+    const asset = await prepareImageAsset(file, state.availableImages.length);
+    await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = resolve;
+      image.onerror = () => reject(new Error(t("error.invalidImage")));
+      image.src = asset.url;
+    });
+    const relativePath = `__covers__/${crypto.randomUUID?.() || Date.now()}/${file.name}`;
+    asset.relativePath = relativePath;
+    if (albumStore) state.extraImages.push({ ...albumStore.packFiles([file])[0], relativePath });
+    state.availableImages.push(asset);
+    await applyGlobalCover(state.availableImages.length - 1);
+  }
+
+  async function applyGlobalCover(assetIndex) {
+    const asset = state.availableImages[assetIndex];
+    if (!asset || !state.tracks.length) return;
+    await preloadImage(asset.url);
+    state.tracks.forEach((track) => {
+      track.image = asset.url;
+      track.backgroundImage = asset.backgroundUrl || asset.url;
+      track.imageName = asset.name;
+      track.imagePath = asset.relativePath || asset.name;
+      track.generatedArt = false;
+    });
+    recomputeArtGroups();
+    if (state.currentIndex >= 0) {
+      setImageImmediately(state.tracks[state.currentIndex].image, state.tracks[state.currentIndex], state.currentIndex);
+      updateTrackCopy(state.currentIndex);
+    }
+    renderMapping();
+    persistCurrentAlbum();
+    showToast(t("toast.globalCover", { name: asset.name }));
+  }
+
   function setMappingOpen(open) {
     if (open && !state.tracks.length) {
       showToast(t("toast.loadTracksFirst"));
@@ -1148,6 +1238,26 @@
 
   function renderMapping() {
     els.autoMapBtn.disabled = !state.availableImages.length;
+    if (els.globalCoverSelect) {
+      els.globalCoverSelect.replaceChildren();
+      const currentUrl = state.tracks.length && state.tracks.every((track) => track.image === state.tracks[0].image)
+        ? state.tracks[0].image
+        : "";
+      const mixed = document.createElement("option");
+      mixed.value = "";
+      mixed.disabled = true;
+      mixed.textContent = t("mapping.keepPerTrack");
+      mixed.selected = !currentUrl;
+      els.globalCoverSelect.append(mixed);
+      state.availableImages.forEach((asset, assetIndex) => {
+        const option = document.createElement("option");
+        option.value = String(assetIndex);
+        option.textContent = asset.name;
+        option.selected = asset.url === currentUrl;
+        els.globalCoverSelect.append(option);
+      });
+      els.globalCoverSelect.disabled = !state.availableImages.length;
+    }
     els.mappingList.replaceChildren();
     state.tracks.forEach((track, trackIndex) => {
       const row = document.createElement("div");
@@ -1193,6 +1303,7 @@
         track.image = asset.url;
         track.backgroundImage = asset.backgroundUrl || asset.url;
         track.imageName = asset.name;
+        track.imagePath = asset.relativePath || asset.name;
         track.generatedArt = false;
         recomputeArtGroups();
         thumb.src = asset.url;
@@ -1200,6 +1311,8 @@
           setImageImmediately(track.image, track, trackIndex);
           updateTrackCopy(trackIndex);
         }
+        renderMapping();
+        persistCurrentAlbum();
         showToast(`${track.title} → ${asset.name}`);
       });
 
@@ -1294,6 +1407,7 @@
   function resetAllStartPoints() {
     state.tracks.forEach((track, index) => applyTrackStart(index, 0));
     renderMapping();
+    persistCurrentAlbum();
     showToast(t("toast.startsReset"));
   }
 
@@ -1308,6 +1422,7 @@
       track.image = asset.url;
       track.backgroundImage = asset.backgroundUrl || asset.url;
       track.imageName = asset.name;
+      track.imagePath = asset.relativePath || asset.name;
       track.generatedArt = false;
     });
     recomputeArtGroups();
@@ -1318,6 +1433,7 @@
       updateTrackCopy(state.currentIndex);
     }
     renderMapping();
+    persistCurrentAlbum();
     showToast(t("toast.autoMapped"));
   }
 
@@ -1339,6 +1455,8 @@
       if (!track.backgroundImage) track.backgroundImage = track.image;
     });
     state.tracks = tracks;
+    state.albumId = meta.albumId || "";
+    state.extraImages = meta.extraImages || [];
     renderTrackList();
     state.albumMeta = { ...meta };
     state.availableImages = Array.isArray(meta.images) && meta.images.length
@@ -1369,19 +1487,44 @@
     showToast(t("toast.loaded", { tracks: tracks.length, images: state.imageCount }), 3600);
   }
 
-  async function parseFolderFiles(fileList) {
-    const files = [...fileList];
+  async function albumIdForFiles(files, rootName) {
+    const signature = JSON.stringify([rootName, ...files.map((file) =>
+      [file.webkitRelativePath || file.name, file.size, file.lastModified || 0]).sort((a, b) => a[0].localeCompare(b[0]))]);
+    if (!crypto.subtle) return `album-${encodeURIComponent(rootName)}-${files.length}`;
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(signature));
+    return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function parseFolderFiles(fileList, savedConfig = null) {
+    if (state.importing) return;
+    state.importing = true;
+    try {
+      await pendingAlbumSave;
+      await parseAlbumFiles(fileList, savedConfig);
+    } finally { state.importing = false; }
+  }
+
+  async function parseAlbumFiles(fileList, savedConfig) {
+    const originalFiles = [...fileList].filter((file) => AUDIO_EXT.has(extension(file.name)) || IMAGE_EXT.has(extension(file.name)) || file.name.toLowerCase() === "album.json");
+    const firstPath = originalFiles.find((file) => AUDIO_EXT.has(extension(file.name)))?.webkitRelativePath || "";
+    const rootName = savedConfig?.rootName || firstPath.split("/")[0] || "UNNAMED ALBUM";
+    const albumId = savedConfig?.albumId || await albumIdForFiles(originalFiles, rootName);
+    const cachedExtras = albumStore && savedConfig?.extraImages ? albumStore.unpackFiles({ files: savedConfig.extraImages }) : [];
+    const files = [...originalFiles, ...cachedExtras];
     const audioFiles = files.filter((file) => AUDIO_EXT.has(extension(file.name))).sort((a, b) => naturalCompare(a.name, b.name));
     const imageFiles = files.filter((file) => IMAGE_EXT.has(extension(file.name))).sort((a, b) => naturalCompare(a.name, b.name));
     if (!audioFiles.length) throw new Error(t("error.noAudioInFolder"));
 
-    let manifest = null;
+    let manifest = savedConfig || null;
     const manifestFile = files.find((file) => file.name.toLowerCase() === "album.json");
-    if (manifestFile) {
+    if (!savedConfig && manifestFile) {
       try { manifest = JSON.parse(await manifestFile.text()); }
       catch (_) { showToast(t("toast.manifestInvalid")); }
     }
 
+    state.transitionToken += 1;
+    stopStartPreview(true);
+    els.audio.forEach((audio) => { audio.pause(); audio.removeAttribute("src"); audio.load(); });
     revokeObjectUrls();
     const manifestTracks = Array.isArray(manifest?.tracks) ? manifest.tracks : [];
     const audioUrlCache = new Map();
@@ -1404,10 +1547,14 @@
     if (imageFiles.length) showToast(t("toast.optimizingImages", { count: imageFiles.length }), 2400);
     const imageAssets = await Promise.all(imageFiles.map((file, index) => prepareImageAsset(file, index)));
     const imageAssetByFile = new Map(imageFiles.map((file, index) => [file, imageAssets[index]]));
+    const audioAssets = [];
+    for (const file of audioFiles) audioAssets.push(await sanitizeFlacFile(file));
 
     const imagePolicy = manifest?.imagePolicy || (imageFiles.length < audioFiles.length ? "chapters" : "match");
     const findManifestDetails = (audioFile, index) => {
       const key = pairingKey(audioFile.name);
+      const exact = manifestTracks.find((item) => (item.audio || item.file || item.filename) === (audioFile.webkitRelativePath || audioFile.name));
+      if (exact) return exact;
       const byName = manifestTracks.find((item) => {
         const candidate = item.audio || item.file || item.filename || "";
         return candidate && (candidate === audioFile.name || pairingKey(candidate) === key);
@@ -1451,45 +1598,87 @@
         title,
         subtitle: details.subtitle || details.lyric || "",
         kicker: details.kicker || "LOCAL PERFORMANCE FILE",
-        audio: urlFor(audioFile, audioUrlCache),
+        audio: urlFor(audioAssets[index], audioUrlCache),
         image,
         backgroundImage: imageAsset?.backgroundUrl || image,
         imageName: imageFile?.name || "",
+        imagePath: imageFile?.webkitRelativePath || imageFile?.name || "",
         startAt: Number(details.startAt) || 0,
         objectPosition: details.objectPosition || "",
         variationIndex: Number.isFinite(Number(details.variation)) ? Number(details.variation) : undefined,
         artIndex: generatedArt ? index : Math.max(0, artIndex),
         generatedArt,
-        sourceName: audioFile.name
+        sourceName: audioFile.name,
+        sourcePath: audioFile.webkitRelativePath || audioFile.name
       };
     });
 
-    const firstPath = audioFiles[0].webkitRelativePath || "";
-    const rootName = firstPath.split("/")[0] || "UNNAMED ALBUM";
     await setTracks(tracks, {
       albumTitle: manifest?.albumTitle || manifest?.title || rootName,
       artist: manifest?.artist || "LOCAL SESSION",
-      images: imageAssets
+      images: imageAssets,
+      rootName,
+      albumId,
+      extraImages: savedConfig?.extraImages || []
     });
-
-    if (imageFiles.length && imageFiles.length < audioFiles.length) {
-      showToast(t("toast.chapterMapped", { tracks: audioFiles.length, images: imageFiles.length }), 4600);
-    } else if (!imageFiles.length) {
-      showToast(t("toast.noImages"), 4200);
+    if (savedConfig) {
+      libraryStatus("album.saved");
+    } else {
+      libraryStatus("album.saving");
+      try {
+        const config = albumConfigFromState();
+        await albumStore.save({
+          id: albumId, title: config.albumTitle, trackCount: tracks.length,
+          updatedAt: Date.now(), bytes: originalFiles.reduce((sum, file) => sum + file.size, 0),
+          files: albumStore.packFiles(originalFiles), config
+        });
+        libraryStatus("album.saved");
+      } catch (_) {
+        state.albumId = "";
+        libraryStatus("album.cacheFailed");
+        showToast(t("toast.cacheFailed"), 6000);
+      }
     }
   }
 
   /** 当前在专辑弹窗中选中的卡片：{kind, el, title}（仅有「导入专辑」一种） */
   let selectedAlbum = null;
 
-  function openAlbumOverview() {
+  async function openAlbumOverview() {
     selectedAlbum = null;
     const picker = els.albumPicker;
     if (!picker) {
       setWelcomeVisible(true);
       return;
     }
+    setWelcomeVisible(true);
     picker.replaceChildren();
+    els.welcomeLoadBtn.disabled = true;
+    if (els.welcomeDeleteBtn) {
+      els.welcomeDeleteBtn.disabled = true;
+      els.welcomeDeleteBtn.dataset.confirming = "";
+      els.welcomeDeleteBtn.textContent = t("album.deleteSelected");
+    }
+    const appendCachedCard = (record) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "album-option is-cached";
+      const titleEl = document.createElement("span");
+      titleEl.className = "album-option-title";
+      titleEl.textContent = record.title || t("album.cachedTitle");
+      const metaEl = document.createElement("span");
+      metaEl.className = "album-option-meta";
+      metaEl.dataset.i18n = "album.cachedMeta";
+      metaEl.dataset.i18nVars = JSON.stringify({ count: record.trackCount || 0, size: ((record.bytes || 0) / 1024 / 1024).toFixed(1) });
+      metaEl.textContent = t("album.cachedMeta", JSON.parse(metaEl.dataset.i18nVars));
+      btn.append(titleEl, metaEl);
+      btn.addEventListener("click", () => {
+        const wasSelected = btn.classList.contains("is-selected");
+        selectAlbumCard(btn, "cached", record.id);
+        if (wasSelected) loadCachedAlbum(record.id);
+      });
+      picker.appendChild(btn);
+    };
     const appendImportedCard = (title, count) => {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -1511,44 +1700,36 @@
       });
       picker.appendChild(btn);
     };
+    try {
+      await pendingAlbumSave;
+      const cachedAlbums = await albumStore?.list();
+      cachedAlbums?.forEach(appendCachedCard);
+    } catch (_) { libraryStatus("album.cacheFailed"); }
     const nativeImport = location.hostname === "appassets.androidplatform.net" || new URLSearchParams(location.search).get("imported") === "1";
-    if (!nativeImport) {
+    if (nativeImport) {
+      // Android/WebView 导入目录以一张卡片显示（点选，再点一次载入）。
+      try {
+        const response = await fetch("/import/album.json");
+        const manifest = response.ok ? await response.json() : null;
+        if (manifest && Array.isArray(manifest.tracks) && manifest.tracks.length) {
+          appendImportedCard(manifest.albumTitle || manifest.title || t("album.importedTitle"), manifest.tracks.length);
+        } else {
+          const listingResponse = await fetch("/import/__list__");
+          const listing = listingResponse.ok ? await listingResponse.json() : null;
+          if (listing && Array.isArray(listing.files)) {
+            const audioCount = listing.files.filter((name) => AUDIO_EXT.has(extension(name))).length;
+            if (audioCount) appendImportedCard(listing.title || t("album.importedTitle"), audioCount);
+          }
+        }
+      } catch (_) {}
+    }
+    if (!picker.children.length) {
       const hint = document.createElement("div");
       hint.className = "album-empty";
       hint.dataset.i18n = "album.empty";
       hint.textContent = t("album.empty");
       picker.appendChild(hint);
-      setWelcomeVisible(true);
-      return;
     }
-    // Android/WebView 导入目录以一张卡片显示（点选，再点一次载入）。
-    fetch("/import/album.json")
-      .then((resp) => (resp.ok ? resp.json() : null))
-      .then((manifest) => {
-        if (manifest && Array.isArray(manifest.tracks) && manifest.tracks.length) {
-          appendImportedCard(manifest.albumTitle || manifest.title || t("album.importedTitle"), manifest.tracks.length);
-          return;
-        }
-        // 没有 album.json 的导入(纯素材自动配对)→ 用素材清单生成卡片
-        return fetch("/import/__list__")
-          .then((resp) => (resp.ok ? resp.json() : null))
-          .then((listing) => {
-            if (!listing || !Array.isArray(listing.files)) return;
-            const audioCount = listing.files.filter((name) => AUDIO_EXT.has(extension(name))).length;
-            if (audioCount) appendImportedCard(listing.title || t("album.importedTitle"), audioCount);
-          });
-      })
-      .catch(() => {})
-      .finally(() => {
-        // 还没有任何专辑时显示空状态提示
-        if (!picker.children.length) {
-          const hint = document.createElement("div");
-          hint.className = "album-empty";
-          hint.dataset.i18n = "album.empty";
-          hint.textContent = t("album.empty");
-          picker.appendChild(hint);
-        }
-      });
     setWelcomeVisible(true);
   }
 
@@ -1560,10 +1741,29 @@
     }
     el.classList.add("is-selected");
     selectedAlbum = { kind, el, title };
+    els.welcomeLoadBtn.disabled = false;
+    if (els.welcomeDeleteBtn) {
+      els.welcomeDeleteBtn.disabled = false;
+      els.welcomeDeleteBtn.dataset.confirming = "";
+      els.welcomeDeleteBtn.textContent = t("album.deleteSelected");
+    }
+  }
+
+  async function loadCachedAlbum(id) {
+    try {
+      await initAudio();
+      await pendingAlbumSave;
+      const record = await albumStore.get(id);
+      if (!record) throw new Error(t("album.cacheMissing"));
+      await parseFolderFiles(albumStore.unpackFiles(record), record.config);
+      showToast(t("toast.cachedLoaded"), 3000);
+    } catch (error) {
+      showToast(t("toast.cachedLoadFailed", { error: error.message || error }), 4200);
+    }
   }
 
   /** 删除所选专辑(仅导入专辑一种,二次点击确认) */
-  function handleDeleteSelected() {
+  async function handleDeleteSelected() {
     const sel = selectedAlbum;
     if (!sel) {
       showToast(t("album.selectToDelete"), 2600);
@@ -1583,6 +1783,21 @@
     }
     btn.dataset.confirming = "";
     btn.disabled = true;
+    if (sel.kind === "cached") {
+      await pendingAlbumSave;
+      albumStore.remove(sel.title)
+        .then(() => {
+          if (state.albumId === sel.title) { state.albumId = ""; libraryStatus("album.sessionOnly"); }
+          showToast(t("album.deleted"));
+          openAlbumOverview();
+        })
+        .catch((error) => {
+          showToast(t("toast.deleteFailed", { error: error.message }), 4200);
+          btn.disabled = false;
+          btn.textContent = t("album.deleteSelected");
+        });
+      return;
+    }
     fetch("/import/__delete__", { method: "POST" })
       .then((resp) => {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -2188,7 +2403,11 @@
       els.folderInput.click();
     };
 
-    els.loadFolderBtn.addEventListener("click", openFolder);
+    els.loadFolderBtn.addEventListener("click", openAlbumOverview);
+    els.welcomeLoadBtn.addEventListener("click", () => {
+      if (selectedAlbum?.kind === "cached") loadCachedAlbum(selectedAlbum.title);
+      else if (selectedAlbum) loadImportedAlbum();
+    });
     els.welcomeFolderBtn.addEventListener("click", openFolder);
     els.welcomeDeleteBtn?.addEventListener("click", handleDeleteSelected);
     els.folderInput.addEventListener("change", async () => {
@@ -2267,6 +2486,17 @@
     els.languageBtn?.addEventListener("click", toggleLanguage);
     els.mappingBtn.addEventListener("click", () => setMappingOpen(!state.mappingOpen));
     els.mappingCloseBtn.addEventListener("click", () => setMappingOpen(false));
+    els.globalCoverBtn.addEventListener("click", () => {
+      els.globalCoverInput.value = "";
+      els.globalCoverInput.click();
+    });
+    els.globalCoverInput.addEventListener("change", async () => {
+      try { await importGlobalCover(els.globalCoverInput.files[0]); }
+      catch (error) { showToast(error.message || String(error)); }
+    });
+    els.globalCoverSelect?.addEventListener("change", () => {
+      if (els.globalCoverSelect.value !== "") applyGlobalCover(Number(els.globalCoverSelect.value)).catch((error) => showToast(error.message || String(error)));
+    });
     els.autoMapBtn.addEventListener("click", () => autoMapImages().catch((error) => showToast(error.message || String(error))));
     els.resetStartsBtn.addEventListener("click", resetAllStartPoints);
     els.mappingPanel.addEventListener("click", (event) => {

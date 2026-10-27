@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "melodio-shell-";
-const CACHE_NAME = `${CACHE_PREFIX}v3`;
+const CACHE_NAME = `${CACHE_PREFIX}v5`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,6 +8,8 @@ const APP_SHELL = [
   "./app.js",
   "./i18n.js",
   "./filename-utils.js",
+  "./flac-utils.js",
+  "./album-store.js",
   "./skins/poster.css",
   "./skins/obi.css",
   "./skins/gallery.css",
