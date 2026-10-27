@@ -4043,21 +4043,108 @@ body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin
   opacity: 1;
 }
 
-/* Library and album-wide cover controls reuse the settings panel. */
+/* Mapping controls: keep the cover control in its own grid row. */
+.mapping-card { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.mapping-list { grid-row: 3; min-height: 0; }
+.mapping-footer { grid-row: 4; min-width: 0; }
+.global-cover-controls {
+  grid-row: 2;
+  min-width: 0;
+  padding: 14px 30px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 18px;
+  color: inherit;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+.global-cover-control {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(180px, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+.global-cover-control > span { color: inherit; white-space: nowrap; font-size: 13px; }
+.global-cover-controls select,
+.global-cover-controls button,
+.language-control select {
+  min-width: 0;
+  min-height: 38px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-radius: 7px;
+  color: inherit;
+  background-color: color-mix(in srgb, currentColor 7%, transparent);
+  font: inherit;
+}
+.global-cover-controls select,
+.language-control select {
+  width: 100%;
+  padding: 0 34px 0 11px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 16px) 16px, calc(100% - 11px) 16px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.global-cover-controls button {
+  width: max-content;
+  padding: 0 15px;
+  cursor: pointer;
+}
+.global-cover-controls button:hover,
+.global-cover-controls select:focus,
+.language-control select:focus { border-color: currentColor; }
+.global-cover-controls p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.global-cover-controls option,
+.language-control option { color: #202124; background: #f6f4ef; }
+
+/* Light editorial skins use paper controls; dark skins inherit their own ink. */
+body[data-skin="liner"] :is(.global-cover-controls select, .global-cover-controls button, .mapping-row select, .language-control select) {
+  color: var(--ln-ink); background-color: var(--ln-paper); border-color: var(--ln-hair);
+}
+body[data-skin="gallery"] :is(.global-cover-controls select, .global-cover-controls button, .mapping-row select, .language-control select) {
+  color: var(--g-ink); background-color: #f8f6f2; border-color: var(--g-hair);
+}
+body[data-skin="poster"] :is(.global-cover-controls select, .global-cover-controls button, .mapping-row select, .language-control select) {
+  color: var(--pz-ink); background-color: var(--pz-paper); border-color: var(--pz-line);
+}
+body[data-skin="obi"] :is(.global-cover-controls select, .global-cover-controls button, .mapping-row select, .language-control select) {
+  color: var(--obi-ink); background-color: var(--obi-strip); border-color: var(--obi-hair);
+}
+
+/* Language is a choice, so show it as a real select in every theme. */
+.language-control {
+  min-width: 0;
+  min-height: 34px;
+  padding: 2px 6px;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+.language-control > span { color: inherit; font-size: 11px; white-space: nowrap; }
+.language-control select { min-height: 30px; padding-left: 9px; font-size: 11px; }
+
 .welcome-card { max-height: calc(100dvh - 48px); overflow-y: auto; }
 .welcome-actions { flex-wrap: wrap; }
 .welcome-card .library-status { margin-top: 16px; font-size: 12px; line-height: 1.6; }
 .album-picker { max-height: 32dvh; overflow-y: auto; }
 .album-option { flex-shrink: 0; }
-.global-cover-controls { padding: 14px 30px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-line, #555); }
-.global-cover-control { display: flex; flex: 1; align-items: center; gap: 12px; min-width: 0; }
-.global-cover-control span { white-space: nowrap; font-size: 13px; }
-.global-cover-control select { min-width: 0; width: 100%; min-height: 40px; padding: 8px; }
-.global-cover-controls button { min-height: 40px; padding: 8px 14px; cursor: pointer; }
-.global-cover-controls select, .global-cover-controls button { border: 1px solid #777; border-radius: 6px; color: #f5f4ef; background: #1c1e23; }
-.global-cover-controls p { flex-basis: 100%; margin: 0; font-size: 12px; opacity: .7; }
-@media (max-width: 600px) {
-  .global-cover-controls { padding-inline: 18px; }
-  .global-cover-control { flex-basis: 100%; }
+@media (max-width: 700px) {
+  .global-cover-controls { grid-template-columns: 1fr; padding-inline: 18px; }
+  .global-cover-control { grid-template-columns: max-content minmax(0, 1fr); }
+  .global-cover-controls button { width: 100%; }
+  .global-cover-controls p { grid-column: auto; }
   .mapping-footer { flex-wrap: wrap; }
 }

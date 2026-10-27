@@ -41,7 +41,7 @@
     duotoneState: $("#duotoneState"),
     loadFolderBtn: $("#loadFolderBtn"),
     motionBtn: $("#motionBtn"),
-    languageBtn: $("#languageBtn"),
+    languageSelect: $("#languageSelect"),
     mappingBtn: $("#mappingBtn"),
     mappingPanel: $("#mappingPanel"),
     mappingList: $("#mappingList"),
@@ -1108,12 +1108,13 @@
     els.backgroundPlaybackState.textContent = t(state.backgroundPlayback ? "toggle.on" : "toggle.off");
     els.duotoneState.textContent = t(state.duotone ? "toggle.on" : "toggle.off");
     els.playBtn.setAttribute("aria-label", t(state.playing ? "control.pause" : "control.play"));
+    if (els.languageSelect) els.languageSelect.value = i18n.language;
     if (els.welcomeDeleteBtn && !els.welcomeDeleteBtn.dataset.confirming) els.welcomeDeleteBtn.textContent = t("album.deleteSelected");
     if (state.tracks.length) renderMapping();
   }
 
-  function toggleLanguage() {
-    i18n.setLanguage(i18n.nextLanguage());
+  function setInterfaceLanguage(value) {
+    i18n.setLanguage(value);
     refreshLocalizedText();
     showToast(t("language.changed"));
   }
@@ -2483,7 +2484,7 @@
       els.previewAudio.volume = volume;
     });
     els.motionBtn.addEventListener("click", cycleMotionMode);
-    els.languageBtn?.addEventListener("click", toggleLanguage);
+    els.languageSelect?.addEventListener("change", () => setInterfaceLanguage(els.languageSelect.value));
     els.mappingBtn.addEventListener("click", () => setMappingOpen(!state.mappingOpen));
     els.mappingCloseBtn.addEventListener("click", () => setMappingOpen(false));
     els.globalCoverBtn.addEventListener("click", () => {
