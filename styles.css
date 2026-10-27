@@ -4067,6 +4067,7 @@ body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin
 }
 .global-cover-control > span { color: inherit; white-space: nowrap; font-size: 13px; }
 .global-cover-controls select,
+.mapping-row select,
 .global-cover-controls button,
 .language-control select {
   min-width: 0;
@@ -4079,6 +4080,7 @@ body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin
   font: inherit;
 }
 .global-cover-controls select,
+.mapping-row select,
 .language-control select {
   width: 100%;
   padding: 0 34px 0 11px;
@@ -4106,7 +4108,11 @@ body:is([data-skin="stamp"], [data-skin="film"], [data-skin="glass"], [data-skin
   line-height: 1.5;
 }
 .global-cover-controls option,
-.language-control option { color: #202124; background: #f6f4ef; }
+.mapping-row select option,
+.language-control option {
+  color: var(--color-dock-ink);
+  background: var(--color-dock);
+}
 
 /* Light editorial skins use paper controls; dark skins inherit their own ink. */
 body[data-skin="liner"] :is(.global-cover-controls select, .global-cover-controls button, .mapping-row select, .language-control select) {
@@ -4116,10 +4122,28 @@ body[data-skin="gallery"] :is(.global-cover-controls select, .global-cover-contr
   color: var(--g-ink); background-color: #f8f6f2; border-color: var(--g-hair);
 }
 body[data-skin="poster"] :is(.global-cover-controls select, .global-cover-controls button, .mapping-row select, .language-control select) {
-  color: var(--pz-ink); background-color: var(--pz-paper); border-color: var(--pz-line);
+  color: var(--color-dock-ink); background-color: var(--color-dock); border-color: var(--pz-line);
 }
 body[data-skin="obi"] :is(.global-cover-controls select, .global-cover-controls button, .mapping-row select, .language-control select) {
   color: var(--obi-ink); background-color: var(--obi-strip); border-color: var(--obi-hair);
+}
+body[data-skin="liner"] :is(.global-cover-controls option, .mapping-row select option, .language-control option) {
+  color: var(--ln-ink); background: var(--ln-paper);
+}
+body[data-skin="gallery"] :is(.global-cover-controls option, .mapping-row select option, .language-control option) {
+  color: var(--g-ink); background: #f8f6f2;
+}
+body[data-skin="obi"] :is(.global-cover-controls option, .mapping-row select option, .language-control option) {
+  color: var(--obi-ink); background: var(--obi-strip);
+}
+body[data-skin="poster"] :is(.global-cover-controls option, .mapping-row select option, .language-control option) {
+  color: var(--color-dock-ink); background: var(--color-dock);
+}
+body:is([data-skin="liner"], [data-skin="gallery"], [data-skin="obi"], [data-skin="stamp"]) :is(.global-cover-controls select, .mapping-row select, .language-control select) {
+  color-scheme: light;
+}
+body:is([data-skin="poster"], [data-skin="film"], [data-skin="glass"], [data-skin="terminal"], [data-skin="riso"], [data-skin="carbon"], [data-skin="instrument"], [data-skin="pulse"], [data-skin="prism"]) :is(.global-cover-controls select, .mapping-row select, .language-control select) {
+  color-scheme: dark;
 }
 
 /* Language is a choice, so show it as a real select in every theme. */

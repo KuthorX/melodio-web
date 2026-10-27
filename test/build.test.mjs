@@ -33,6 +33,7 @@ assert.match(html, /name="theme-color"/);
 assert.match(app, /navigator\.serviceWorker\.register\("service-worker\.js"\)/);
 assert.match(html, /src="flac-utils\.js"/);
 assert.match(app, /sanitizeFlacFile/);
+assert.match(app, /colorScheme/);
 assert.match(html, /src="album-store\.js"/);
 assert.doesNotMatch(html, /(?:src|href)="\//);
 const manifest = JSON.parse(await readFile(resolve("dist/manifest.webmanifest"), "utf8"));

@@ -92,6 +92,7 @@
     { id: "pulse" },
     { id: "prism" }
   ];
+  const LIGHT_SELECT_SKINS = new Set(["liner", "gallery", "obi"]);
   const MOTION_MODES = ["motion.soft", "motion.rich", "motion.strong"];
 
   const AUDIO_EXT = new Set(["mp3", "wav", "m4a", "aac", "ogg", "flac", "opus"]);
@@ -1074,6 +1075,7 @@
     if (index < 0) return;
     state.skinIndex = index;
     els.body.dataset.skin = id;
+    els.body.style.colorScheme = LIGHT_SELECT_SKINS.has(id) ? "light" : "dark";
     els.skinName.textContent = t(`skin.${id}`);
     $$('[data-set-skin]').forEach((button) => button.classList.toggle("active", button.dataset.setSkin === id));
     try { localStorage.setItem("melodio-skin", id); } catch (_) {}
