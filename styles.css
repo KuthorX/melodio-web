@@ -1400,14 +1400,14 @@ body[data-skin="glass"].is-shared-art-transition .art-frame-b {
   align-self: end;
   padding-bottom: 5px;
 }
-.mapping-row > select {
+.mapping-row > .themed-select {
   align-self: end;
   margin-bottom: 5px;
 }
 .start-editor {
   grid-column: 3 / 5;
   display: grid;
-  grid-template-columns: auto auto minmax(220px, 1fr) 82px auto;
+  grid-template-columns: auto auto minmax(220px, 1fr) 172px auto;
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -1460,11 +1460,15 @@ body[data-skin="glass"].is-shared-art-transition .art-frame-b {
 }
 .start-timeline {
   min-width: 0;
+  position: relative;
   display: grid;
   gap: 3px;
 }
-.start-range {
+.start-range,
+.end-range {
   --start-pct: 0%;
+  --end-start-pct: 0%;
+  --end-pct: 0%;
   width: 100%;
   height: 20px;
   margin: 0;
@@ -1473,8 +1477,17 @@ body[data-skin="glass"].is-shared-art-transition .art-frame-b {
   background: transparent;
   cursor: pointer;
 }
-.start-range:disabled { cursor: wait; opacity: .42; }
-.start-range::-webkit-slider-runnable-track {
+.start-range:disabled,
+.end-range:disabled { cursor: wait; opacity: .42; }
+.start-timeline > .end-range {
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 auto;
+}
+.start-timeline > .start-range { position: relative; z-index: 1; }
+.start-timeline > .start-scale { position: relative; z-index: 3; pointer-events: none; }
+.start-range::-webkit-slider-runnable-track,
+.end-range::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
   background:
@@ -1483,7 +1496,11 @@ body[data-skin="glass"].is-shared-art-transition .art-frame-b {
       rgba(255,255,255,.13) var(--start-pct) 100%);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.035);
 }
-.start-range::-webkit-slider-thumb {
+.start-range::-webkit-slider-runnable-track {
+  background: rgba(255,255,255,.13);
+}
+.start-range::-webkit-slider-thumb,
+.end-range::-webkit-slider-thumb {
   width: 14px;
   height: 14px;
   margin-top: -5px;
@@ -1494,17 +1511,20 @@ body[data-skin="glass"].is-shared-art-transition .art-frame-b {
   background: #f2efe7;
   box-shadow: 0 0 0 1px rgba(255,255,255,.35), 0 4px 12px rgba(0,0,0,.38);
 }
-.start-range::-moz-range-track {
+.start-range::-moz-range-track,
+.end-range::-moz-range-track {
   height: 4px;
   border-radius: 999px;
   background: rgba(255,255,255,.13);
 }
-.start-range::-moz-range-progress {
+.start-range::-moz-range-progress,
+.end-range::-moz-range-progress {
   height: 4px;
   border-radius: 999px;
   background: rgba(240,236,226,.92);
 }
-.start-range::-moz-range-thumb {
+.start-range::-moz-range-thumb,
+.end-range::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border: 2px solid #16171a;
@@ -1544,6 +1564,28 @@ body[data-skin="glass"].is-shared-art-transition .art-frame-b {
   padding: 0;
   font-size: 9px;
 }
+.end-range::-webkit-slider-runnable-track {
+  background:
+    linear-gradient(90deg,
+      rgba(255,255,255,.13) 0 var(--end-start-pct),
+      rgba(240,236,226,.92) var(--end-start-pct) var(--end-pct),
+      rgba(255,255,255,.13) var(--end-pct) 100%);
+}
+.time-pair {
+  display: grid;
+  grid-template-columns: repeat(2, 82px);
+  gap: 6px;
+}
+.end-time-input { width: 82px; }
+.touch-track-row .preview-duration {
+  margin-left: .45em;
+  color: currentColor;
+  font: 500 .62em/1 var(--ui-font);
+  letter-spacing: .04em;
+  opacity: .62;
+  white-space: nowrap;
+}
+.touch-track-row .preview-duration[hidden] { display: none !important; }
 .mapping-footer button:disabled {
   opacity: .32;
   cursor: not-allowed;
@@ -1558,10 +1600,10 @@ body[data-skin="glass"].is-shared-art-transition .art-frame-b {
   }
   .mapping-number,
   .mapping-thumb { grid-row: 1 / span 2; }
-  .mapping-row > select { grid-column: 3; }
+  .mapping-row > .themed-select { grid-column: 3; }
   .start-editor {
     grid-column: 1 / -1;
-    grid-template-columns: auto auto minmax(150px, 1fr) 82px;
+    grid-template-columns: auto auto minmax(150px, 1fr) 172px;
   }
   .start-nudge { display: none; }
 }
@@ -2565,15 +2607,6 @@ body[data-skin] .stage-header .eyebrow {
   white-space: nowrap;
 }
 
-.theme-menu-chevron {
-  color: var(--color-dock-muted);
-  transition: transform var(--dur-short) var(--ease-out);
-}
-
-.theme-menu[open] .theme-menu-chevron {
-  transform: rotate(180deg);
-}
-
 .theme-menu-list {
   position: absolute;
   top: calc(100% + var(--space-2xs));
@@ -2957,11 +2990,6 @@ body.is-playing .control-dock .primary-controls .play-icon {
 .setting-toggle[aria-pressed="true"] .toggle-track i {
   background: var(--color-accent);
   transform: translateX(0.875rem);
-}
-
-.toggle-state {
-  color: var(--color-dock-muted);
-  text-align: right;
 }
 
 .shortcut-help {
@@ -4165,10 +4193,614 @@ body:is([data-skin="poster"], [data-skin="film"], [data-skin="glass"], [data-ski
 .welcome-card .library-status { margin-top: 16px; font-size: 12px; line-height: 1.6; }
 .album-picker { max-height: 32dvh; overflow-y: auto; }
 .album-option { flex-shrink: 0; }
+
+/* Theme-native select surfaces. The hidden select remains the state source;
+   the visible control owns its popup so browsers cannot replace it with chrome. */
+.themed-select {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+.themed-select-source {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.themed-select-button {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  overflow: hidden;
+  color: var(--color-dock-ink, var(--ink));
+  background: var(--color-modal, var(--surface));
+  border: 1px solid color-mix(in oklch, currentColor 28%, transparent);
+  border-radius: var(--radius-control, 7px);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.themed-select-button:hover,
+.themed-select-button:focus-visible {
+  border-color: var(--color-focus, var(--accent));
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-focus, var(--accent)) 16%, transparent);
+}
+.themed-select-button:disabled { cursor: not-allowed; }
+.themed-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.themed-select .themed-select-button { width: 100%; padding: 0 11px; }
+.global-cover-controls .themed-select .themed-select-button { width: 100%; }
+.themed-select-menu {
+  position: fixed;
+  z-index: 220;
+  display: none;
+  grid-auto-rows: minmax(34px, auto);
+  gap: 3px;
+  padding: 5px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  color: var(--color-dock-ink, var(--ink));
+  background: var(--color-modal, var(--surface));
+  border: 1px solid color-mix(in oklch, currentColor 28%, transparent);
+  border-radius: var(--radius-panel, 8px);
+  box-shadow: 0 18px 48px var(--color-shadow, rgba(0, 0, 0, .34));
+  font-family: var(--font-body, var(--ui-font));
+}
+.themed-select-menu.is-open { display: grid; }
+.themed-select-option {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 10px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: max(0px, calc(var(--radius-control, 7px) - 2px));
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.themed-select-option:hover,
+.themed-select-option:focus-visible,
+.themed-select-option[aria-selected="true"] {
+  color: var(--color-accent, var(--accent));
+  background: color-mix(in oklch, var(--color-accent, var(--accent)) 12%, transparent);
+  border-color: color-mix(in oklch, var(--color-accent, var(--accent)) 24%, transparent);
+  outline: none;
+}
+.themed-select-option:disabled { opacity: .52; cursor: default; }
+
+body[data-skin="liner"] :is(.themed-select-button, .themed-select-menu) {
+  color: var(--ln-ink); background: var(--ln-fibre), var(--ln-paper); border-color: var(--ln-hair);
+  font-family: var(--ln-serif);
+}
+body[data-skin="liner"] .themed-select-option[aria-selected="true"] { color: var(--ln-ox); background: oklch(25% .02 50 / .08); }
+body[data-skin="obi"] :is(.themed-select-button, .themed-select-menu) {
+  color: var(--obi-ink); background: var(--obi-grain), var(--obi-strip); border-color: var(--obi-hair);
+  font-family: var(--font-mono);
+}
+body[data-skin="obi"] .themed-select-option[aria-selected="true"] { color: var(--obi-vermilion); background: color-mix(in oklch, var(--obi-vermilion) 10%, transparent); }
+body[data-skin="gallery"] :is(.themed-select-button, .themed-select-menu) {
+  color: var(--g-ink); background: #f8f6f2; border-color: var(--g-hair);
+  border-radius: 1px; font-family: var(--g-grotesk);
+}
+body[data-skin="gallery"] .themed-select-option[aria-selected="true"] { color: var(--g-ink); background: rgba(31, 30, 28, .08); }
+body[data-skin="poster"] :is(.themed-select-button, .themed-select-menu) {
+  color: var(--pz-ink); background: var(--pz-paper); border-color: var(--pz-line);
+  border-radius: 0; font-family: var(--pz-sans);
+}
+body[data-skin="poster"] .themed-select-option[aria-selected="true"] { color: var(--pz-vivid); background: color-mix(in oklch, var(--pz-vivid) 10%, transparent); }
+body[data-skin="terminal"] :is(.themed-select-button, .themed-select-menu) { text-transform: uppercase; }
+body[data-skin="terminal"] .themed-select-option[aria-selected="true"] { text-shadow: 0 0 10px currentColor; }
+body:is([data-skin="obi"], [data-skin="liner"]) :is(.global-cover-controls button, .global-cover-controls .themed-select-button, .mapping-row .themed-select-button) { border-radius: 0; }
+
+body[data-skin="liner"] .welcome-card p,
+body[data-skin="liner"] .welcome-card .library-status,
+body[data-skin="liner"] .album-option-meta { color: var(--ln-ink); }
+body[data-skin="liner"] .welcome-card .album-option { color: var(--ln-ink); border-color: var(--ln-hair); background: oklch(98% .02 80 / .42); }
+body[data-skin="liner"] .welcome-actions button:disabled { opacity: .72; color: var(--ln-soft); border-color: var(--ln-hair); background: oklch(88% .03 78 / .65); }
+
+/* H toggles an immersive listening canvas for every skin. Keep artwork and remove chrome. */
+html body[data-clean="true"] .app {
+  padding: 0 !important;
+}
+html body[data-clean="true"] .stage {
+  inset: 0 0 clamp(24px, 5vh, 64px) 0 !important;
+  padding-bottom: 0 !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+html body[data-clean="true"] :is(.stage-header, .header-meta, .control-dock, .control-dock.is-visible, .dock-corner, .stage-footer) {
+  display: none !important;
+}
+html body[data-clean="true"] :is(.theme-menu-list, .more-controls-menu) { display: none !important; }
+
+/* Settings popover: language, background playback, and motion share one row rhythm. */
+html body[data-skin] .more-controls-menu > :is(.language-control, .motion-setting, .setting-toggle, #cleanBtn) {
+  border-bottom: 0 !important;
+}
+.motion-setting {
+  min-height: 34px;
+  padding: 3px 6px;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  font-size: 11px;
+}
+.motion-tabs {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid color-mix(in oklch, currentColor 24%, transparent);
+}
+.motion-tabs button {
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 7px;
+  color: inherit;
+  background: transparent;
+  border: 0 !important;
+  border-right: 1px solid color-mix(in oklch, currentColor 18%, transparent) !important;
+  border-radius: 0 !important;
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+.motion-tabs button:last-child { border-right: 0 !important; }
+.motion-tabs button:hover,
+.motion-tabs button.is-active,
+.motion-tabs button[aria-selected="true"] {
+  color: var(--color-dock-ink, var(--ink));
+  background: color-mix(in oklch, var(--color-accent, var(--accent)) 22%, transparent);
+  box-shadow: inset 0 -2px 0 var(--color-accent, var(--accent));
+  font-weight: 700;
+}
+body[data-skin="liner"] .motion-tabs button.is-active,
+body[data-skin="obi"] .motion-tabs button.is-active { color: var(--ln-paper, var(--obi-paper)); }
+
 @media (max-width: 700px) {
   .global-cover-controls { grid-template-columns: 1fr; padding-inline: 18px; }
   .global-cover-control { grid-template-columns: max-content minmax(0, 1fr); }
   .global-cover-controls button { width: 100%; }
   .global-cover-controls p { grid-column: auto; }
   .mapping-footer { flex-wrap: wrap; }
+}
+
+/* ─────────────────────────────────────────────
+   QA pass · settings popover, listening range,
+   circular close buttons, immersive duration
+   ───────────────────────────────────────────── */
+
+/* Settings popover: three same-level rows (language → background → motion),
+   one label column, one control column, no separators, never clipped. */
+.more-controls-menu {
+  width: 17rem;
+  gap: 2px;
+  padding: 10px;
+  max-height: min(26rem, calc(100dvh - 8.5rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.more-controls-menu .settings-row {
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 2px;
+  border: 0;
+}
+.more-controls-menu .settings-label {
+  color: inherit;
+  font: 500 11px/1.2 var(--font-body);
+  letter-spacing: 0;
+  white-space: nowrap;
+  border: 0;
+}
+.more-controls-menu .settings-value {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.more-controls-menu .settings-value > *,
+.more-controls-menu .settings-value .themed-select {
+  width: 100%;
+  max-width: 9.75rem;
+}
+.more-controls-menu .settings-value .themed-select-button {
+  min-height: 30px;
+  height: 30px;
+  padding: 0 9px;
+  font: 500 11px/1 var(--font-body);
+  border-color: color-mix(in oklch, currentColor 24%, transparent);
+  background: color-mix(in oklch, currentColor 6%, transparent);
+}
+.more-controls-menu .settings-value .setting-toggle {
+  width: 100%;
+  max-width: 9.75rem;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.more-controls-menu .settings-value .setting-toggle:hover { background: transparent; }
+.more-controls-menu .settings-row .toggle-track { flex: 0 0 auto; }
+.more-controls-menu .settings-value .motion-tabs {
+  width: 100%;
+  max-width: 9.75rem;
+  min-height: 30px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 0;
+  border-radius: 2px;
+  background: color-mix(in oklch, currentColor 7%, transparent);
+}
+.more-controls-menu .motion-tabs button {
+  min-width: 0;
+  min-height: 30px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: inherit;
+  background: transparent;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none;
+  font: 500 11px/1 var(--font-body);
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+.more-controls-menu .motion-tabs button:hover {
+  background: color-mix(in oklch, currentColor 12%, transparent);
+  color: inherit;
+}
+.more-controls-menu .motion-tabs button.is-active,
+.more-controls-menu .motion-tabs button[aria-selected="true"] {
+  color: var(--color-modal, #121316);
+  background: currentColor;
+  box-shadow: none;
+  font-weight: 700;
+}
+body[data-skin="liner"] .more-controls-menu .motion-tabs button.is-active,
+body[data-skin="obi"] .more-controls-menu .motion-tabs button.is-active,
+body[data-skin="liner"] .more-controls-menu .motion-tabs button[aria-selected="true"],
+body[data-skin="obi"] .more-controls-menu .motion-tabs button[aria-selected="true"] {
+  color: var(--ln-paper, var(--obi-paper, #f6f2e8));
+}
+.more-controls-menu #cleanBtn,
+.more-controls-menu .duotone-toggle {
+  border: 1px solid color-mix(in oklch, currentColor 20%, transparent);
+}
+
+/* Circular close buttons: a drawn cross stays mathematically centered. */
+.mapping-close,
+.welcome-close {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 0;
+  line-height: 0;
+}
+.mapping-close::before,
+.welcome-close::before {
+  content: "";
+  display: block;
+  width: 44%;
+  height: 44%;
+  rotate: 45deg;
+  background:
+    linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat;
+}
+
+/* Listening range: one rail, two independently draggable handles. */
+.mapping-row {
+  grid-template-columns: 2.25rem 3rem minmax(10rem, .7fr) minmax(17rem, 1.3fr);
+  align-items: start;
+  min-height: 0;
+  padding: 12px 0;
+  row-gap: 8px;
+}
+.mapping-row > .range-editor { grid-column: 3 / -1; }
+.range-editor {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 10px 12px 9px;
+  border: 1px solid color-mix(in oklch, currentColor 14%, transparent);
+  border-radius: 8px;
+  background: color-mix(in oklch, currentColor 4%, transparent);
+}
+.range-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.range-label {
+  font: 600 11px/1 var(--font-body);
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.range-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  opacity: .6;
+}
+.range-rail {
+  position: relative;
+  height: 26px;
+  margin: 0 10px;
+  touch-action: none;
+  cursor: pointer;
+}
+.range-rail-track,
+.range-fill {
+  position: absolute;
+  top: 50%;
+  height: 4px;
+  translate: 0 -50%;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.range-rail-track {
+  left: 0;
+  right: 0;
+  background: color-mix(in oklch, currentColor 20%, transparent);
+}
+.range-fill {
+  background: currentColor;
+  opacity: .82;
+}
+.range-thumb {
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  translate: -50% -50%;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  background: var(--color-modal, #14151a);
+  box-shadow: 0 1px 4px oklch(0% 0 0 / .35);
+  cursor: grab;
+  z-index: 1;
+}
+.range-thumb-end { background: currentColor; z-index: 2; }
+.range-thumb.is-active {
+  box-shadow: 0 0 0 4px color-mix(in oklch, currentColor 22%, transparent), 0 1px 4px oklch(0% 0 0 / .35);
+}
+.range-thumb:focus-visible {
+  outline: 2px solid var(--color-focus, currentColor);
+  outline-offset: 3px;
+}
+.range-thumb:disabled { opacity: .4; cursor: wait; }
+.range-scale {
+  display: flex;
+  justify-content: space-between;
+  font: 500 10px/1 var(--font-mono);
+  opacity: .58;
+}
+.range-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.range-times {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+.range-dash { opacity: .5; font-size: 11px; }
+.range-editor .start-time-input {
+  width: 6.75rem;
+  min-width: 0;
+  max-width: 8rem;
+  height: 30px;
+  text-align: center;
+  font: 600 11px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.range-editor .start-preview-button,
+.range-editor .range-nudge {
+  min-height: 30px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in oklch, currentColor 22%, transparent);
+  border-radius: 6px;
+  color: inherit;
+  background: color-mix(in oklch, currentColor 5%, transparent);
+  font: 600 11px/1 var(--font-body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.range-editor .start-preview-button { min-width: 3.75rem; }
+.range-editor .range-nudge { width: 2.75rem; padding: 0; }
+.range-editor .start-preview-button:hover,
+.range-editor .range-nudge:hover {
+  border-color: color-mix(in oklch, currentColor 38%, transparent);
+  background: color-mix(in oklch, currentColor 10%, transparent);
+}
+.range-actions { display: flex; align-items: center; gap: 5px; }
+.range-editor .start-preview-button.is-playing {
+  color: var(--color-modal, #14151a);
+  background: currentColor;
+  border-color: transparent;
+}
+
+/* Immediate preview-duration label on the track rows; hidden while immersed. */
+.touch-track-row .preview-duration {
+  margin-left: .4em;
+  font-size: .68em;
+  letter-spacing: .02em;
+  opacity: .66;
+  white-space: nowrap;
+}
+html body[data-clean="true"] .touch-track-row .preview-duration { display: none !important; }
+
+@media (max-width: 52rem) {
+  .mapping-row { grid-template-columns: 2rem minmax(0, 1fr); }
+  .mapping-row > .range-editor { grid-column: 1 / -1; }
+  .range-controls {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "preview actions"
+      "times times";
+    row-gap: 8px;
+  }
+  .range-editor .start-preview-button { grid-area: preview; }
+  .range-actions { grid-area: actions; justify-self: end; }
+  .range-times { grid-area: times; justify-content: space-between; }
+  .range-hint { display: none; }
+  .range-editor .start-time-input { width: 100%; max-width: 8.5rem; }
+}
+
+/* Skin utility rules hide [aria-hidden] glyphs inside the dock; the row switch
+   is a real control there, not a decorative glyph. */
+.more-controls-menu .settings-value .toggle-track,
+.more-controls-menu .settings-value .toggle-track[aria-hidden="true"] { display: block !important; }
+.more-controls-menu .settings-value .motion-tabs,
+.more-controls-menu .settings-value .motion-tabs button { height: 30px; }
+.more-controls-menu .settings-value .motion-tabs button.is-active,
+.more-controls-menu .settings-value .motion-tabs button[aria-selected="true"] {
+  color: var(--color-modal, #121316);
+  background: var(--color-dock-ink, currentColor);
+}
+body[data-skin="liner"] .more-controls-menu .motion-tabs button.is-active,
+body[data-skin="obi"] .more-controls-menu .motion-tabs button.is-active,
+body[data-skin="liner"] .more-controls-menu .motion-tabs button[aria-selected="true"],
+body[data-skin="obi"] .more-controls-menu .motion-tabs button[aria-selected="true"] {
+  color: var(--color-modal, #f6f2e8);
+}
+
+/* Skin dock rules force utility buttons to auto width/height (and !important);
+   the settings rows need the shared control column to survive that. */
+.more-controls-menu .settings-row .settings-label { font-size: 11px !important; }
+.more-controls-menu .settings-value .setting-toggle,
+.more-controls-menu .settings-value .setting-toggle:hover {
+  width: 100% !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 2px !important;
+  font-size: 11px !important;
+}
+.more-controls-menu .settings-value .themed-select-button { font-size: 11px !important; }
+
+html body[data-skin] .more-controls-menu .settings-row .settings-label { font-size: 11px !important; }
+html body[data-skin] .more-controls-menu .settings-value .setting-toggle,
+html body[data-skin] .more-controls-menu .settings-value .setting-toggle:hover {
+  width: 100% !important;
+  max-width: 9.75rem !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 2px !important;
+  font-size: 11px !important;
+}
+html body[data-skin] html body[data-skin] .more-controls-menu .settings-value .themed-select,
+html body[data-skin] .more-controls-menu .settings-value .themed-select-button {
+  width: 100% !important;
+  max-width: 9.75rem !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  font-size: 11px !important;
+}
+html body[data-skin] .more-controls-menu .settings-value .motion-tabs,
+html body[data-skin] .more-controls-menu .settings-value .motion-tabs button {
+  height: 30px !important;
+  min-height: 30px !important;
+}
+
+.range-point-tag {
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: .06em;
+  opacity: .55;
+  white-space: nowrap;
+}
+.mapping-row { padding: 10px 0; }
+.range-editor { padding: 9px 11px 8px; gap: 6px; }
+
+/* Immersive: keep a real bottom breathing room; several skins size the stage
+   with a fixed height, which would otherwise ignore the bottom inset. */
+html body[data-clean="true"] .stage {
+  inset: 0 0 clamp(24px, 5vh, 64px) 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Liner's own immersive rule pins the stage to the viewport; keep the shared
+   bottom breathing room instead of a full-bleed spread. */
+html body[data-skin="liner"][data-clean="true"] .stage {
+  inset: 0 0 clamp(24px, 5vh, 64px) 0 !important;
+  height: auto !important;
+}
+
+/* Active motion mode: tint + inner rule in the tab's own ink, so every skin
+   keeps its readable text colour instead of inverting into an unknown pair. */
+html body[data-skin] .more-controls-menu .settings-value .motion-tabs button.is-active,
+html body[data-skin] .more-controls-menu .settings-value .motion-tabs button[aria-selected="true"] {
+  color: inherit;
+  background: color-mix(in oklch, currentColor 16%, transparent);
+  box-shadow: inset 0 0 0 1.5px currentColor, inset 0 -2px 0 currentColor;
+  font-weight: 700;
+}
+html body[data-skin] .more-controls-menu .settings-value .motion-tabs button.is-active:hover,
+html body[data-skin] .more-controls-menu .settings-value .motion-tabs button[aria-selected="true"]:hover {
+  background: color-mix(in oklch, currentColor 22%, transparent);
+}
+
+/* The legacy "×" text node is an anonymous grid item; it pushed the drawn cross
+   up-left. Take the cross out of flow and centre it against the circle. */
+.mapping-close { position: relative; }
+html body .mapping-close::before,
+html body .welcome-close::before {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 44%;
+  height: 44%;
+  rotate: 45deg;
+}
+
+/* Duotone keeps its on/off word; the background-playback row is switch-only. */
+.toggle-state {
+  color: var(--color-dock-muted);
+  text-align: right;
+}
+.more-controls-menu .settings-value .toggle-state {
+  font: 500 11px/1 var(--font-body);
+  letter-spacing: 0;
+  font-size: 11px !important;
 }

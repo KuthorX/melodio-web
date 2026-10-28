@@ -44,7 +44,7 @@ body[data-skin="liner"] .stage-header .brand-block h1, body[data-skin="liner"] .
 body[data-skin="liner"] .touch-album-kicker, body[data-skin="liner"] .touch-now-playing, body[data-skin="liner"] .touch-hint,
 body[data-skin="liner"] .dock-corner, body[data-skin="liner"] .skin-controls, body[data-skin="liner"] .footer-note,
 body[data-skin="liner"] .touch-track-row .number, body[data-skin="liner"] .touch-track-row .state-mark,
-body[data-skin="liner"] .theme-menu-label, body[data-skin="liner"] .theme-menu-chevron,
+body[data-skin="liner"] .theme-menu-label, 
 body[data-skin="liner"] .legacy-track-copy > :not(#trackIndex) { display: none !important; }
 
 /* ---- the booklet: two facing pages ----------------------------------- */
@@ -70,10 +70,31 @@ body[data-skin="liner"] .art-frame img {
   width: 100% !important; height: 100% !important; border-radius: 0 !important; object-fit: cover; object-position: center;
   filter: none !important; box-shadow: none !important;
 }
-body[data-skin="liner"].is-transitioning .art-frame-a, body[data-skin="liner"].is-shared-art-transition .art-frame-a { animation: linerOut 700ms ease both; }
-body[data-skin="liner"].is-transitioning .art-frame-b, body[data-skin="liner"].is-shared-art-transition .art-frame-b { animation: linerIn 700ms ease both; }
-@keyframes linerOut { to { opacity: 0; } }
-@keyframes linerIn { from { opacity: 0; } to { opacity: 1; } }
+/* Switch = page turn. `rotate`/`translate` are independent properties, so the
+   frame's scroll-clipping transform is untouched; the hinge sits on the spine
+   (right edge of the left leaf) and the parent supplies the perspective. */
+body[data-skin="liner"].is-transitioning .art-frame-a,
+body[data-skin="liner"].is-shared-art-transition .art-frame-a,
+body[data-skin="liner"].is-transitioning .art-frame-b,
+body[data-skin="liner"].is-shared-art-transition .art-frame-b { transform-origin: 100% 50%; }
+body[data-skin="liner"].is-transitioning .art-frame-a, body[data-skin="liner"].is-shared-art-transition .art-frame-a { animation: linerPageOut calc(370ms * var(--motion, 1)) cubic-bezier(.22,.72,.25,1) both !important; }
+body[data-skin="liner"].is-transitioning .art-frame-b, body[data-skin="liner"].is-shared-art-transition .art-frame-b { animation: linerPageIn calc(370ms * var(--motion, 1)) cubic-bezier(.18,.78,.22,1) both !important; }
+@keyframes linerPageOut {
+  from { rotate: y 0deg; translate: 0 0; opacity: 1; }
+  to { rotate: y calc(-42deg * var(--motion, 1)); translate: calc(var(--art-switch-x) * -1 * var(--motion, 1)) 0; opacity: 0; }
+}
+@keyframes linerPageIn {
+  from { rotate: y calc(26deg * var(--motion, 1)); translate: calc(var(--art-switch-x) * var(--motion, 1)) 0; opacity: 0; }
+  to { rotate: y 0deg; translate: 0 0; opacity: 1; }
+}
+/* Playing = the paper grain drifts a whole tile (seamless loop) and the progress
+   leaf breathes: nothing here changes layout, size or reading position. */
+body[data-skin="liner"].is-playing .touch-album-panel { animation: linerPaperDrift calc(24000ms * var(--motion, 1)) linear infinite; }
+body[data-skin="liner"].is-playing .progress-track i { animation: linerProgressBreath calc(3600ms * var(--motion, 1)) ease-in-out infinite; }
+body[data-skin="liner"].is-playing .progress-track i::after { animation: linerDotPulse calc(3600ms * var(--motion, 1)) ease-in-out infinite; }
+@keyframes linerPaperDrift { from { background-position: 0 0, 0 0; } to { background-position: 240px 240px, 0 0; } }
+@keyframes linerProgressBreath { 0%, 100% { opacity: 1; } 50% { opacity: .62; } }
+@keyframes linerDotPulse { 0%, 100% { scale: 1; } 50% { scale: calc(1 + .45 * var(--motion, 1)); } }
 
 /* right page: paper */
 body[data-skin="liner"] .touch-album-panel {
@@ -291,6 +312,7 @@ body[data-skin="liner"] .toast { border-radius: 0; background: var(--ln-ink); co
   }
   body[data-skin="liner"] .stage::after { inset: 0 -6px -200px; }
   body[data-skin="liner"] .art-shell { width: 100% !important; height: var(--ln-cover); }
+  body[data-skin="liner"] .art-frame img { object-fit: contain; background: var(--ln-table); }
   body[data-skin="liner"] .stage::before {
     inset: auto; top: var(--ln-cover); left: 0; width: 100%; height: 50px; transform: translateY(-50%);
     background:
@@ -325,4 +347,8 @@ body[data-skin="liner"] .toast { border-radius: 0; background: var(--ln-ink); co
 
 @media (prefers-reduced-motion: reduce) {
   body[data-skin="liner"] .art-frame, body[data-skin="liner"] .touch-track-row { animation: none !important; transition: none !important; }
+  /* no infinite grain drift or progress breathing when the OS asks for less motion */
+  body[data-skin="liner"].is-playing .touch-album-panel,
+  body[data-skin="liner"].is-playing .progress-track i,
+  body[data-skin="liner"].is-playing .progress-track i::after { animation: none !important; }
 }

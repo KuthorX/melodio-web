@@ -215,6 +215,8 @@ body[data-skin="obi"] .touch-track-list {
   border-top: 3px double var(--obi-ink);
   border-bottom: 1px solid var(--obi-ink);
   padding: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 body[data-skin="obi"] .touch-track-row {
   min-height: 3.5rem;
@@ -265,6 +267,19 @@ body[data-skin="obi"] .touch-track-row.is-active { color: var(--obi-ink); }
 body[data-skin="obi"] .touch-track-row.is-active .title { font-weight: 700; }
 body[data-skin="obi"] .touch-track-row.is-active .number { color: var(--obi-ink); }
 body[data-skin="obi"] .touch-track-row.is-active .state-mark { background: var(--obi-vermilion); }
+/* Switch = horizontal slip. `translate` is a separate property from `transform`,
+   so the sleeve's own translateY(-50%) centring survives the whole move. */
+body[data-skin="obi"].is-transitioning .art-frame-a,
+body[data-skin="obi"].is-shared-art-transition .art-frame-a { animation: obiFrameOut calc(360ms * var(--motion, 1)) cubic-bezier(.22,.72,.25,1) both !important; }
+body[data-skin="obi"].is-transitioning .art-frame-b,
+body[data-skin="obi"].is-shared-art-transition .art-frame-b { animation: obiFrameIn calc(360ms * var(--motion, 1)) cubic-bezier(.18,.78,.22,1) both !important; }
+@keyframes obiFrameOut { from { translate: 0 0; opacity: 1; } to { translate: calc(var(--art-switch-x) * -3 * var(--motion, 1)) 0; opacity: 0; } }
+@keyframes obiFrameIn { from { translate: calc(var(--art-switch-x) * 3 * var(--motion, 1)) 0; opacity: 0; } to { translate: 0 0; opacity: 1; } }
+/* Playing = the sleeve and its paper belt breathe a little, never leaving the grid. */
+body[data-skin="obi"].is-playing .art-frame img { animation: obiCoverBreath calc(6200ms * var(--motion, 1)) ease-in-out infinite; }
+body[data-skin="obi"].is-playing .art-shell::after { animation: obiBeltBreath calc(6200ms * var(--motion, 1)) ease-in-out infinite; }
+@keyframes obiCoverBreath { 0%, 100% { scale: 1; } 50% { scale: calc(1 + .01 * var(--motion, 1)); } }
+@keyframes obiBeltBreath { 0%, 100% { translate: 0 0; opacity: 1; } 50% { translate: calc(-1.5px * var(--motion, 1)) 0; opacity: .94; } }
 /* ---------- Controls: ink on paper ---------- */
 body[data-skin="obi"] .control-dock,
 body[data-skin="obi"] .control-dock.is-visible { background-color: var(--obi-paper); background-image: var(--obi-grain); border-top: 1px solid var(--obi-hair); }
@@ -315,7 +330,7 @@ body[data-skin="obi"] .toast { border-radius: 0; font-family: var(--font-body); 
 body[data-skin="obi"] .album-option, body[data-skin="obi"] .welcome-actions button, body[data-skin="obi"] .welcome-close { border-radius: 0; }
 body[data-skin="obi"] .welcome-actions button.primary { color: oklch(19% 0.012 60); background: oklch(94% 0.018 85); }
 /* ---------- Mobile: full-bleed cover, strip on its right edge ---------- */
-@media (max-width: 720px) {
+@media (max-width: 820px) {
   body[data-skin="obi"] { --cover: calc(100vw - var(--lap)); --fa: 10px; }
   body[data-skin="obi"] .app { padding-bottom: 9.5rem; }
   body[data-skin="obi"] #trackTitle, body[data-skin="obi"] .touch-album-heading h2 { max-height: calc(var(--cover) * .55); }
@@ -339,7 +354,12 @@ body[data-skin="obi"] .welcome-actions button.primary { color: oklch(19% 0.012 6
   body[data-skin="obi"] .touch-track-list { grid-area: 2 / 1; margin: 1.25rem 1.25rem 0; max-height: none; height: auto; grid-auto-rows: auto; }
   body[data-skin="obi"] .touch-track-row .title { font-size: 1.0625rem; }
 }
-@media (prefers-reduced-motion: reduce) { body[data-skin="obi"] .touch-track-row { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  body[data-skin="obi"] .touch-track-row { transition: none; }
+  /* no infinite breathing when the OS asks for less motion */
+  body[data-skin="obi"].is-playing .art-frame img,
+  body[data-skin="obi"].is-playing .art-shell::after { animation: none !important; }
+}
 
 /* quiet text row: IMPORT · SETTINGS · APP  ••• */
 body[data-skin="obi"] .utility-controls { gap: 0; }
@@ -363,7 +383,7 @@ body[data-skin="obi"] .utility-controls .control-label { display: inline; }
 body[data-skin="obi"] .utility-controls .more-controls { display: flex; align-items: center; }
 body[data-skin="obi"] .utility-controls .more-controls summary { padding: 0 .4rem; }
 body[data-skin="obi"] .utility-controls :is(button, a, summary):hover { background: transparent; text-decoration: underline; text-underline-offset: .3em; }
-@media (max-width: 720px) {
+@media (max-width: 820px) {
   body[data-skin="obi"] .utility-controls { display: flex; justify-content: center; flex-wrap: nowrap; }
   body[data-skin="obi"] .utility-controls .app-repo-link .control-label { font-size: inherit; letter-spacing: inherit; }
   body[data-skin="obi"] .utility-controls :is(#loadFolderBtn, #mappingBtn, .app-repo-link) { width: auto; height: auto; padding: 0 .3rem; font-size: .5625rem; letter-spacing: .06em; }

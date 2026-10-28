@@ -6,8 +6,8 @@
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#100f0e" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23100f0e'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23eee8dc' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23c95542'/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="icons/melodio-logo.webp" />
+  <link rel="icon" href="icons/melodio-logo.webp" type="image/webp" />
   <title>Melodio · Local Album Player</title>
   <script>
     (() => {
@@ -45,7 +45,6 @@
           <summary aria-label="选择视觉主题" data-i18n-attr="aria-label:theme.choose">
             <span class="theme-menu-label" data-i18n="theme.label">主题</span>
             <strong id="skinName">内页小册</strong>
-            <span class="theme-menu-chevron" aria-hidden="true">⌄</span>
           </summary>
           <div class="theme-menu-list">
             <button type="button" data-set-skin="poster">
@@ -194,23 +193,39 @@
         <details class="more-controls">
           <summary aria-label="更多控制" title="更多控制" data-i18n-attr="aria-label:control.more;title:control.more">•••</summary>
           <div class="more-controls-menu">
-            <button id="motionBtn" type="button">动效：丰富</button>
-            <label class="language-control">
-              <span data-i18n="language.label">语言</span>
-              <select id="languageSelect" aria-label="选择语言" data-i18n-attr="aria-label:language.choose">
-                <option value="zh" data-i18n="language.zh">中文</option>
-                <option value="en" data-i18n="language.en">English</option>
-                <option value="fr" data-i18n="language.fr">Français</option>
-                <option value="ru" data-i18n="language.ru">Русский</option>
-                <option value="es" data-i18n="language.es">Español</option>
-                <option value="ja" data-i18n="language.ja">日本語</option>
-                <option value="ko" data-i18n="language.ko">한국어</option>
-              </select>
-            </label>
-            <button id="cleanBtn" type="button" data-i18n="control.clean">干净模式</button>
-            <button id="backgroundPlaybackBtn" class="setting-toggle" type="button" aria-pressed="false">
-              <span data-i18n="control.backgroundPlayback">后台播放</span><span class="toggle-track" aria-hidden="true"><i></i></span><span id="backgroundPlaybackState" class="toggle-state">关</span>
-            </button>
+            <div class="settings-row">
+              <span class="settings-label" data-i18n="language.label">语言</span>
+              <div class="settings-value">
+                <select id="languageSelect" aria-label="选择语言" data-i18n-attr="aria-label:language.choose">
+                  <option value="zh" data-i18n="language.zh">中文</option>
+                  <option value="en" data-i18n="language.en">English</option>
+                  <option value="fr" data-i18n="language.fr">Français</option>
+                  <option value="ru" data-i18n="language.ru">Русский</option>
+                  <option value="es" data-i18n="language.es">Español</option>
+                  <option value="ja" data-i18n="language.ja">日本語</option>
+                  <option value="ko" data-i18n="language.ko">한국어</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-row">
+              <span class="settings-label" data-i18n="control.backgroundPlayback">后台播放</span>
+              <div class="settings-value">
+                <button id="backgroundPlaybackBtn" class="setting-toggle" type="button" aria-pressed="false" aria-label="后台播放" data-i18n-attr="aria-label:control.backgroundPlayback">
+                  <span class="toggle-track" aria-hidden="true"><i></i></span>
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <span class="settings-label" data-i18n="motion.label">动效</span>
+              <div class="settings-value">
+                <div id="motionTabs" class="motion-tabs" role="tablist" aria-label="动效强度" data-i18n-attr="aria-label:motion.label">
+                  <button type="button" role="tab" data-motion-mode="0" data-i18n="motion.soft">柔和</button>
+                  <button type="button" role="tab" data-motion-mode="1" data-i18n="motion.rich">丰富</button>
+                  <button type="button" role="tab" data-motion-mode="2" data-i18n="motion.strong">强烈</button>
+                </div>
+              </div>
+            </div>
+            <button id="cleanBtn" type="button" data-i18n="control.clean">沉浸模式</button>
             <button id="duotoneBtn" class="setting-toggle duotone-toggle" type="button" aria-pressed="false">
               <span data-i18n="control.duotone">封面双色调</span><span class="toggle-track" aria-hidden="true"><i></i></span><span id="duotoneState" class="toggle-state">关</span>
             </button>
@@ -263,6 +278,7 @@
         <footer class="mapping-footer">
           <button id="autoMapBtn" type="button" data-i18n="mapping.autoMap">按连续章节自动分配</button>
           <button id="resetStartsBtn" type="button" data-i18n="mapping.resetStarts">全部起点归零</button>
+          <button id="resetEndsBtn" type="button" data-i18n="mapping.resetEnds">全部终点归零</button>
           <span data-i18n="mapping.shortcut">快捷键 G 打开 / 关闭</span>
         </footer>
       </div>

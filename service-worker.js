@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "melodio-shell-";
-const CACHE_NAME = `${CACHE_PREFIX}v5`;
+const CACHE_NAME = `${CACHE_PREFIX}v6`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -15,8 +15,8 @@ const APP_SHELL = [
   "./skins/gallery.css",
   "./skins/liner.css",
   "./manifest.webmanifest",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/melodio-logo-192.webp",
+  "./icons/melodio-logo-512.webp"
 ];
 
 self.addEventListener("install", (event) => {

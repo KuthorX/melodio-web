@@ -44,6 +44,10 @@ body[data-skin="gallery"] {
   background-attachment: fixed;
 }
 
+@media (min-width: 821px) {
+  body[data-skin="gallery"] { --g-s: min(68vh, 52vw, 760px); }
+}
+
 /* ---------- strip everything that is not the wall and the work ---------- */
 body[data-skin="gallery"] #ambientCanvas,
 body[data-skin="gallery"] .background-image,
@@ -77,7 +81,6 @@ body[data-skin="gallery"] .theme-menu-label,
 body[data-skin="gallery"] .utility-controls #motionBtn,
 body[data-skin="gallery"] .utility-controls #cleanBtn,
 body[data-skin="gallery"] .volume-control > span,
-body[data-skin="gallery"] .theme-menu-chevron,
 body[data-skin="gallery"] .ambient-noise { display: none !important; }
 
 /* ---------- flatten the DOM into one grid so the wall label can interleave ---------- */
@@ -87,7 +90,23 @@ body[data-skin="gallery"] .stage,
 body[data-skin="gallery"] .composition,
 body[data-skin="gallery"] .touch-album-panel,
 body[data-skin="gallery"] .legacy-track-copy { display: contents !important; }
-body[data-skin="gallery"] .app { position: fixed; inset: 0; width: auto; height: auto; min-width: 0; min-height: 0; padding: 0 0 calc(54vh - var(--g-s) / 2 - 5px) 0; overflow: hidden; display: grid; grid-template-columns: calc(50vw + var(--g-s) / 2 + 40px) max-content minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) repeat(4, auto); align-content: stretch; background: transparent; }
+body[data-skin="gallery"] .app {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  /* The wall label's bottom edge is the artwork's bottom edge: the bottom padding
+     is exactly the space the fixed artwork leaves under itself. */
+  padding: 0 0 calc(54vh - var(--g-s) / 2) 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: calc(50vw + var(--g-s) / 2 + 40px) max-content minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) repeat(4, max-content);
+  align-content: end;
+  background: transparent;
+}
 
 /* ---------- gallery mark and theme menu ---------- */
 body[data-skin="gallery"] .wordmark { position: absolute; z-index: 40; top: 28px; left: var(--g-m); color: var(--g-ink); font: 400 11px/1 var(--g-grotesk); letter-spacing: var(--g-track); text-decoration: none; }
@@ -124,10 +143,26 @@ body[data-skin="gallery"] .art-shell {
 }
 body[data-skin="gallery"] .art-frame { position: absolute; inset: 12px; left: 12px; top: 12px; width: auto; height: auto; aspect-ratio: auto; transform: none !important; border-radius: 0; background: #e7e3db; box-shadow: 0 0 0 1px rgba(50, 42, 32, .32), 0 0 0 2px rgba(255, 255, 255, .38); }
 body[data-skin="gallery"] .art-frame img { width: 100%; height: 100%; object-fit: contain; transform: none !important; transition: none; filter: none !important; }
-body[data-skin="gallery"].is-transitioning .art-frame-a { animation: gallery-out 380ms ease forwards !important; }
-body[data-skin="gallery"].is-transitioning .art-frame-b { animation: gallery-in 380ms ease forwards !important; }
+/* Switch = zoom + fade. The frame keeps `transform: none !important`, so the zoom
+   is the `scale` property on the image (clipped by the frame) and the fade is the
+   frame's own opacity. */
+body[data-skin="gallery"].is-transitioning .art-frame-a,
+body[data-skin="gallery"].is-shared-art-transition .art-frame-a { animation: gallery-out calc(340ms * var(--motion, 1)) cubic-bezier(.2,.7,.2,1) both !important; }
+body[data-skin="gallery"].is-transitioning .art-frame-b,
+body[data-skin="gallery"].is-shared-art-transition .art-frame-b { animation: gallery-in calc(340ms * var(--motion, 1)) cubic-bezier(.2,.7,.2,1) both !important; }
+body[data-skin="gallery"].is-transitioning .art-frame-a img,
+body[data-skin="gallery"].is-shared-art-transition .art-frame-a img { animation: galleryZoomOut calc(340ms * var(--motion, 1)) cubic-bezier(.2,.7,.2,1) both !important; }
+body[data-skin="gallery"].is-transitioning .art-frame-b img,
+body[data-skin="gallery"].is-shared-art-transition .art-frame-b img { animation: galleryZoomIn calc(340ms * var(--motion, 1)) cubic-bezier(.2,.7,.2,1) both !important; }
 @keyframes gallery-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes gallery-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes galleryZoomOut { from { scale: 1; } to { scale: calc(1 + .045 * var(--motion, 1)); } }
+@keyframes galleryZoomIn { from { scale: calc(1 - .035 * var(--motion, 1)); } to { scale: 1; } }
+/* Playing = the work settles into focus: a hair more contrast, a hair of scale. */
+body[data-skin="gallery"].is-playing .art-frame { animation: galleryFocus calc(7200ms * var(--motion, 1)) ease-in-out infinite; }
+body[data-skin="gallery"].is-playing .art-frame img { animation: galleryFocusZoom calc(7200ms * var(--motion, 1)) ease-in-out infinite; }
+@keyframes galleryFocus { 0%, 100% { filter: contrast(1) brightness(1); } 50% { filter: contrast(calc(1 + .05 * var(--motion, 1))) brightness(1.012); } }
+@keyframes galleryFocusZoom { 0%, 100% { scale: 1; } 50% { scale: calc(1 + .008 * var(--motion, 1)); } }
 
 /* ---------- museum wall label ---------- */
 body[data-skin="gallery"] #trackTitle,
@@ -223,6 +258,10 @@ body[data-skin="gallery"] .progress-track { height: 1px !important; background: 
 body[data-skin="gallery"] .progress-track i { height: 1px !important; background: var(--g-ink); }
 body[data-skin="gallery"] .progress-track i::after { display: none; }
 body[data-skin="gallery"] .time-row { margin-top: 8px; display: flex; justify-content: space-between; color: var(--g-mute); font: 400 11px/1 var(--g-grotesk); font-variant-numeric: tabular-nums; letter-spacing: var(--g-track); }
+body[data-skin="gallery"] .control-dock,
+body[data-skin="gallery"] .control-dock button,
+body[data-skin="gallery"] .control-dock .app-repo-link,
+body[data-skin="gallery"] .more-controls summary { color: var(--g-ink); }
 body[data-skin="gallery"] .primary-controls { grid-column: 1; grid-row: 2; gap: 20px; justify-self: start; align-items: center; display: flex !important; }
 body[data-skin="gallery"] .utility-controls { grid-column: 2; grid-row: 2; justify-self: end; gap: 20px; flex-wrap: nowrap; align-items: center; justify-content: flex-end; }
 body[data-skin="gallery"] .control-dock button,
@@ -345,4 +384,18 @@ body[data-skin="gallery"] .drop-overlay { color: var(--g-ink); background: rgba(
 @media (prefers-reduced-motion: reduce) {
   body[data-skin="gallery"].is-transitioning .art-frame-a,
   body[data-skin="gallery"].is-transitioning .art-frame-b { animation-duration: 1ms !important; }
+  /* no infinite focus breathing when the OS asks for less motion */
+  body[data-skin="gallery"].is-playing .art-frame,
+  body[data-skin="gallery"].is-playing .art-frame img { animation: none !important; }
+}
+
+/* Immersive keeps the wall label on the artwork's bottom edge instead of the viewport edge. */
+html body[data-skin="gallery"][data-clean="true"] .app {
+  padding: 0 0 calc(54vh - var(--g-s) / 2) 0 !important;
+}
+
+/* The dock override above forced left alignment inside the menu; keep the tabs centred. */
+body[data-skin="gallery"] .more-controls-menu .motion-tabs button {
+  justify-content: center;
+  text-align: center;
 }

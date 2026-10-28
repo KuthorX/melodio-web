@@ -129,7 +129,7 @@ body[data-skin="poster"] .theme-menu summary {
   letter-spacing: .06em;
   text-transform: uppercase;
 }
-body[data-skin="poster"] .theme-menu-label, body[data-skin="poster"] .theme-menu-chevron { color: var(--pz-mute); font-size: 11px; }
+body[data-skin="poster"] .theme-menu-label { color: var(--pz-mute); font-size: 11px; }
 body[data-skin="poster"] .theme-menu summary strong { color: var(--pz-ink); font-size: 11px; font-weight: 700; }
 body[data-skin="poster"] .theme-menu-list {
   top: calc(100% + 14px);
@@ -235,22 +235,36 @@ body[data-skin="poster"] .art-shell {
 body[data-skin="poster"] .art-frame { inset: 0; top: 0; left: 0; width: 100%; height: 100%; padding: 0; transform: none !important; border: 0; border-radius: 0; box-shadow: none; background: var(--pz-paper); will-change: opacity; }
 body[data-skin="poster"] .art-frame::before, body[data-skin="poster"] .art-frame::after { display: none; }
 body[data-skin="poster"] .art-frame img { border-radius: 0; transform: none !important; will-change: auto; }
-body[data-skin="poster"].is-transitioning .art-frame-a, body[data-skin="poster"].is-shared-art-transition .art-frame-a { animation: sleeveOutV14 360ms cubic-bezier(.22,.72,.25,1) both !important; }
-body[data-skin="poster"].is-transitioning .art-frame-b, body[data-skin="poster"].is-shared-art-transition .art-frame-b { animation: sleeveInV14 360ms cubic-bezier(.18,.78,.22,1) both !important; }
+/* Switch = crop reveal. clip-path is animated on both ends (explicit from/to) so
+   Chrome interpolates the inset instead of snapping from `none`. */
+body[data-skin="poster"].is-transitioning .art-frame-a,
+body[data-skin="poster"].is-shared-art-transition .art-frame-a { animation: posterFrameOut calc(360ms * var(--motion, 1)) cubic-bezier(.22,.72,.25,1) both !important; }
+body[data-skin="poster"].is-transitioning .art-frame-b,
+body[data-skin="poster"].is-shared-art-transition .art-frame-b { animation: posterFrameIn calc(360ms * var(--motion, 1)) cubic-bezier(.18,.78,.22,1) both !important; }
+@keyframes posterFrameOut { from { clip-path: inset(0 0 0 0); opacity: 1; } to { clip-path: inset(0 100% 0 0); opacity: 0; } }
+@keyframes posterFrameIn { from { clip-path: inset(0 0 0 100%); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+/* Playing = paper breath + headline breath. Scale lives on the image so the crop
+   keeps it, and no property here can shift layout or the frame's Y position. */
+body[data-skin="poster"].is-playing .art-frame img { animation: posterPaperBreath calc(5600ms * var(--motion, 1)) ease-in-out infinite; }
+body[data-skin="poster"].is-playing #trackTitle { transform-origin: 0 50%; animation: posterTitleBreath calc(5600ms * var(--motion, 1)) ease-in-out infinite; }
+@keyframes posterPaperBreath { 0%, 100% { scale: 1; } 50% { scale: calc(1 + .012 * var(--motion, 1)); } }
+@keyframes posterTitleBreath { 0%, 100% { scale: 1; opacity: .92; } 50% { scale: calc(1 + .006 * var(--motion, 1)); opacity: 1; } }
 body[data-skin="poster"] .touch-track-list {
   grid-column: 3 / 9; grid-row: 2; align-self: end; margin-bottom: calc(var(--pz-lb) + var(--pz-base)); position: relative; z-index: 1; display: block; width: auto; padding: 0; column-count: 2; column-gap: var(--pz-g);
   max-height: 100% !important; overflow-y: auto !important; scrollbar-width: none;
 }
 body[data-skin="poster"] .touch-track-row {
   min-height: 0; padding: 4px 0; break-inside: avoid; display: grid; grid-template-columns: 2.6em minmax(0, 1fr); gap: 0; align-items: baseline;
-  color: var(--pz-mute); background: transparent; border: 0; border-radius: 0; opacity: 1; cursor: pointer; transform: none;
+  color: color-mix(in oklch, var(--pz-ink) 72%, var(--pz-mute)); background: transparent; border: 0; border-radius: 0; opacity: 1; cursor: pointer; transform: none;
 }
 body[data-skin="poster"] .touch-track-row .number, body[data-skin="poster"] .touch-track-row .title {
-  grid-column: auto; font: 700 11px/1.5 var(--pz-sans); letter-spacing: .06em; text-transform: uppercase; opacity: 1;
+  grid-column: auto; font: 700 clamp(12px, 1vw, 15px)/1.5 var(--pz-sans); letter-spacing: .06em; text-transform: uppercase; opacity: 1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 body[data-skin="poster"] .touch-track-row .number { font-variant-numeric: tabular-nums; }
 body[data-skin="poster"] .touch-track-row:hover, body[data-skin="poster"] .touch-track-row.is-active { color: var(--pz-ink); }
+html[data-art-tone="light"] body[data-skin="poster"] .touch-track-row { color: oklch(82% .01 90); }
+html[data-art-tone="light"] body[data-skin="poster"] .control-dock { color: oklch(88% .01 90); }
 body[data-skin="poster"] .touch-track-row.is-active .title { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 body[data-skin="poster"] .touch-track-row:focus-visible { box-shadow: none; outline: 1px solid var(--pz-ink); outline-offset: 2px; }
 /* ---- Optional duotone cover (off by default: the artwork is untouched) -- */
@@ -291,4 +305,30 @@ body[data-skin="poster"][data-duotone="true"] .art-frame::after { content: ""; d
 }
 @media (prefers-reduced-motion: reduce) {
   body[data-skin="poster"] * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  /* no infinite breathing when the OS asks for less motion */
+  body[data-skin="poster"].is-playing .art-frame img,
+  body[data-skin="poster"].is-playing #trackTitle { animation: none !important; }
+}
+
+/* Keep poster headlines legible on narrow phones. Long Latin titles may wrap;
+   they must never force the composition wider than the viewport. */
+@media (max-width: 51.25rem) {
+  body[data-skin="poster"] {
+    --pz-m: clamp(16px, 5vw, 28px);
+    --pz-fs: clamp(42px, 14vw, 86px);
+  }
+  body[data-skin="poster"] #trackTitle {
+    width: 100%;
+    max-width: 100%;
+    max-height: 2.2em;
+    margin: 14px 0 18px;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    text-wrap: balance;
+    font-size: var(--pz-fs);
+    line-height: .86;
+    letter-spacing: -.055em;
+  }
+  body[data-skin="poster"] .art-shell { margin-inline: calc(-1 * var(--pz-m)); }
 }

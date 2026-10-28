@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-for (const file of ["index.html", "tokens.css", "styles.css", "app.js", "i18n.js", "filename-utils.js", "flac-utils.js", "album-store.js", "manifest.webmanifest", "service-worker.js", "icons/icon-192.png", "icons/icon-512.png", "skins/poster.css", "skins/obi.css", "skins/gallery.css", "skins/liner.css"]) {
+for (const file of ["index.html", "tokens.css", "styles.css", "app.js", "i18n.js", "filename-utils.js", "flac-utils.js", "album-store.js", "manifest.webmanifest", "service-worker.js", "icons/melodio-logo-192.webp", "icons/melodio-logo-512.webp", "icons/melodio-logo.webp", "skins/poster.css", "skins/obi.css", "skins/gallery.css", "skins/liner.css"]) {
   await access(resolve("dist", file));
 }
 const html = await readFile(resolve("dist/index.html"), "utf8");

@@ -23,7 +23,8 @@ if (process.argv.includes("--serve")) {
     ".css": "text/css; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
     ".webmanifest": "application/manifest+json",
-    ".png": "image/png"
+    ".png": "image/png",
+    ".webp": "image/webp"
   };
   createServer(async (request, response) => {
     const pathname = decodeURIComponent(new URL(request.url, `http://${request.headers.host}`).pathname);

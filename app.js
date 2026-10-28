@@ -35,12 +35,11 @@
     prevBtn: $("#prevBtn"),
     nextBtn: $("#nextBtn"),
     cleanBtn: $("#cleanBtn"),
+    motionTabs: $("#motionTabs"),
     backgroundPlaybackBtn: $("#backgroundPlaybackBtn"),
-    backgroundPlaybackState: $("#backgroundPlaybackState"),
     duotoneBtn: $("#duotoneBtn"),
     duotoneState: $("#duotoneState"),
     loadFolderBtn: $("#loadFolderBtn"),
-    motionBtn: $("#motionBtn"),
     languageSelect: $("#languageSelect"),
     mappingBtn: $("#mappingBtn"),
     mappingPanel: $("#mappingPanel"),
@@ -48,6 +47,7 @@
     mappingCloseBtn: $("#mappingCloseBtn"),
     autoMapBtn: $("#autoMapBtn"),
     resetStartsBtn: $("#resetStartsBtn"),
+    resetEndsBtn: $("#resetEndsBtn"),
     globalCoverSelect: $("#globalCoverSelect"),
     globalCoverInput: $("#globalCoverInput"),
     globalCoverBtn: $("#globalCoverBtn"),
@@ -156,7 +156,6 @@
     spectrumBars: [],
     fakePhase: 0,
     motionMode: 1,
-    motionLabelShortcut: false,
     imageCount: 0,
     availableImages: [],
     decodedImages: new Map(),
@@ -172,6 +171,149 @@
     importing: false,
     toastTimer: 0
   };
+
+  const themedSelects = new Map();
+  let themedSelectEventsBound = false;
+
+  function closeThemedSelect(control) {
+    if (!control) return;
+    control.open = false;
+    control.button.setAttribute("aria-expanded", "false");
+    control.menu.classList.remove("is-open");
+    control.menu.setAttribute("aria-hidden", "true");
+  }
+
+  function closeAllThemedSelects(except = null) {
+    themedSelects.forEach((control) => {
+      if (control !== except) closeThemedSelect(control);
+    });
+  }
+
+  function positionThemedSelect(control) {
+    if (!control?.open) return;
+    const rect = control.button.getBoundingClientRect();
+    const menuHeight = Math.min(control.menu.scrollHeight || 320, Math.max(180, window.innerHeight - 28));
+    const roomBelow = window.innerHeight - rect.bottom - 14;
+    const top = roomBelow >= Math.min(menuHeight, 320) || roomBelow >= rect.top ? rect.bottom + 8 : Math.max(14, rect.top - menuHeight - 8);
+    const maxHeight = Math.max(160, Math.min(360, top < rect.top ? rect.top - 22 : window.innerHeight - top - 14));
+    control.menu.style.left = `${Math.min(rect.left, Math.max(14, window.innerWidth - rect.width - 14))}px`;
+    control.menu.style.top = `${top}px`;
+    control.menu.style.width = `${Math.max(rect.width, Math.min(420, window.innerWidth - 28))}px`;
+    control.menu.style.maxHeight = `${maxHeight}px`;
+  }
+
+  function syncThemedSelect(select) {
+    const control = themedSelects.get(select);
+    if (!control) return;
+    const options = [...select.options];
+    const selected = select.selectedOptions[0] || options.find((option) => !option.disabled);
+    control.value.textContent = selected?.textContent || "—";
+    control.button.disabled = select.disabled;
+    control.wrapper.classList.toggle("is-disabled", select.disabled);
+    control.menu.replaceChildren();
+    options.forEach((option) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "themed-select-option";
+      item.setAttribute("role", "option");
+      item.setAttribute("aria-selected", String(option.selected));
+      item.disabled = option.disabled;
+      item.textContent = option.textContent;
+      item.addEventListener("click", () => {
+        if (option.disabled) return;
+        select.value = option.value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        closeThemedSelect(control);
+        control.button.focus({ preventScroll: true });
+      });
+      control.menu.append(item);
+    });
+    if (control.open) positionThemedSelect(control);
+  }
+
+  function setupThemedSelect(select) {
+    if (!select || themedSelects.has(select)) return;
+    const wrapper = document.createElement("div");
+    wrapper.className = "themed-select";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "themed-select-button";
+    button.setAttribute("aria-haspopup", "listbox");
+    button.setAttribute("aria-expanded", "false");
+    const value = document.createElement("span");
+    value.className = "themed-select-value";
+    button.append(value);
+    const menu = document.createElement("div");
+    menu.className = "themed-select-menu";
+    menu.setAttribute("role", "listbox");
+    menu.setAttribute("aria-hidden", "true");
+    menu.id = `${select.id || "select"}-menu`;
+    button.setAttribute("aria-controls", menu.id);
+    document.body.append(menu);
+    select.classList.add("themed-select-source");
+    select.parentNode.insertBefore(wrapper, select);
+    wrapper.append(button, select);
+    const control = { select, wrapper, button, value, menu, open: false };
+    themedSelects.set(select, control);
+
+    const toggle = () => {
+      if (select.disabled) return;
+      if (control.open) closeThemedSelect(control);
+      else {
+        closeAllThemedSelects(control);
+        control.open = true;
+        button.setAttribute("aria-expanded", "true");
+        menu.classList.add("is-open");
+        menu.setAttribute("aria-hidden", "false");
+        syncThemedSelect(select);
+        positionThemedSelect(control);
+      }
+    };
+    button.addEventListener("click", toggle);
+    button.addEventListener("keydown", (event) => {
+      const options = [...select.options].filter((option) => !option.disabled);
+      if (!options.length) return;
+      const current = Math.max(0, options.findIndex((option) => option.value === select.value));
+      if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+        event.preventDefault();
+        const delta = event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : 0;
+        const next = event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : (current + delta + options.length) % options.length;
+        select.value = options[next].value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        return;
+      }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggle();
+      } else if (event.key === "Escape") {
+        closeThemedSelect(control);
+      }
+    });
+    select.addEventListener("change", () => syncThemedSelect(select));
+    const observer = new MutationObserver(() => syncThemedSelect(select));
+    observer.observe(select, { childList: true, subtree: true, attributes: true, attributeFilter: ["disabled", "selected"] });
+    control.observer = observer;
+    syncThemedSelect(select);
+    if (!themedSelectEventsBound) {
+      themedSelectEventsBound = true;
+      document.addEventListener("pointerdown", (event) => {
+        if (event.target instanceof Element && event.target.closest(".themed-select, .themed-select-menu")) return;
+        closeAllThemedSelects();
+      });
+      window.addEventListener("resize", () => themedSelects.forEach(positionThemedSelect));
+      window.addEventListener("scroll", () => themedSelects.forEach(positionThemedSelect), true);
+    }
+  }
+
+  function cleanupThemedSelects(container) {
+    themedSelects.forEach((control, select) => {
+      if (!container?.contains(select)) return;
+      closeThemedSelect(control);
+      control.observer?.disconnect();
+      control.menu.remove();
+      themedSelects.delete(select);
+    });
+  }
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -310,6 +452,16 @@
     }
   }
 
+  function trackEndAt(track, duration) {
+    const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : (Number(track?.duration) || 0);
+    if (!safeDuration) return 0;
+    const startAt = clamp(Number(track?.startAt) || 0, 0, Math.max(0, safeDuration - 0.05));
+    const configured = Number(track?.endAt) || 0;
+    return configured > startAt + 0.05
+      ? clamp(configured, startAt + 0.05, safeDuration)
+      : safeDuration;
+  }
+
   function stopStartPreview(resetSource = false) {
     clearTimeout(state.previewTimer);
     state.previewTimer = 0;
@@ -378,8 +530,11 @@
   function applyTrackStart(trackIndex, value) {
     const track = state.tracks[trackIndex];
     if (!track) return 0;
-    const maximum = Number.isFinite(track.duration) && track.duration > 0 ? Math.max(0, track.duration - 0.05) : 1e9;
-    const startAt = Math.round(clamp(Number(value) || 0, 0, maximum) * 10) / 10;
+    const duration = Number(track.duration) || 0;
+    const maximum = duration > 0 ? Math.max(0, duration - 0.05) : 1e9;
+    // 起点不得越过终点:两者之间始终保留 1s 片段
+    const endLimit = duration > 0 ? Math.max(0, trackEndAt(track, duration) - RANGE_MIN_GAP) : maximum;
+    const startAt = Math.round(clamp(Number(value) || 0, 0, Math.min(maximum, endLimit)) * 10) / 10;
     const changed = track.startAt !== startAt;
     track.startAt = startAt;
 
@@ -394,8 +549,28 @@
       clearTimeout(state.previewTimer);
       state.previewTimer = setTimeout(() => stopStartPreview(), 8000);
     }
-    if (changed) persistCurrentAlbum();
+    if (changed) {
+      if (!rangeDragging) persistCurrentAlbum();
+      updateTrackPreviewLabel(trackIndex);
+    }
     return startAt;
+  }
+
+  function applyTrackEnd(trackIndex, value) {
+    const track = state.tracks[trackIndex];
+    if (!track) return 0;
+    const maximum = Number.isFinite(track.duration) && track.duration > 0 ? track.duration : 1e9;
+    const startAt = clamp(Number(track.startAt) || 0, 0, Math.max(0, maximum - 0.05));
+    // 终点不得低于起点,至少留出 1s 片段;0 是合法输入(Home 键)而不是「取全长」
+    const raw = value === undefined || value === null || value === "" ? maximum : Number(value);
+    const endAt = Math.round(clamp(Number.isFinite(raw) ? raw : maximum, startAt + RANGE_MIN_GAP, maximum) * 10) / 10;
+    const changed = track.endAt !== endAt;
+    track.endAt = endAt >= maximum - 0.05 ? 0 : endAt;
+    if (changed) {
+      if (!rangeDragging) persistCurrentAlbum();
+      updateTrackPreviewLabel(trackIndex);
+    }
+    return track.endAt || maximum;
   }
 
   async function previewTrackStart(trackIndex) {
@@ -418,6 +593,7 @@
     }
     await audioReady(preview, 2400);
     const startAt = clamp(Number(track.startAt) || 0, 0, duration > 0 ? Math.max(0, duration - 0.05) : 1e9);
+    const endAt = trackEndAt(track, duration);
     try { preview.currentTime = startAt; } catch (_) {}
     try {
       await preview.play();
@@ -432,7 +608,7 @@
       button.classList.toggle("is-playing", active);
       button.textContent = t(active ? "preview.stop" : "preview.play");
     });
-    const previewLength = duration > startAt ? Math.min(8000, Math.max(700, (duration - startAt) * 1000)) : 8000;
+    const previewLength = endAt > startAt ? Math.min(8000, Math.max(700, (endAt - startAt) * 1000)) : 8000;
     state.previewTimer = setTimeout(() => stopStartPreview(), previewLength);
   }
 
@@ -669,14 +845,41 @@
       <button class="touch-track-row" type="button" role="option"
               data-track-index="${index}" aria-selected="${index === state.currentIndex}">
         <span class="number">${pad(index + 1)}</span>
-        <span class="title">${String(track.title || `Track ${pad(index + 1)}`).replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]))}</span>
+        <span class="title">${String(track.title || `Track ${pad(index + 1)}`).replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]))}<em class="preview-duration" hidden></em></span>
         <span class="state-mark" aria-hidden="true"></span>
       </button>`).join("");
+    state.tracks.forEach((track, index) => {
+      if (Number(track.endAt) > 0 || Number(track.startAt) > 0) ensureTrackDuration(track, index).then(() => updateTrackPreviewLabel(index));
+    });
+  }
+
+  function updateTrackPreviewLabel(index) {
+    const track = state.tracks[index];
+    const row = els.trackList?.querySelector(`[data-track-index="${index}"]`);
+    const label = row?.querySelector(".preview-duration");
+    if (!track || !label) return;
+    const duration = Number(track.duration) || 0;
+    const startAt = clamp(Number(track.startAt) || 0, 0, duration || 1e9);
+    const endAt = trackEndAt(track, duration);
+    const trimmed = Number(track.endAt) > 0 || startAt > 0.05;
+    const visible = duration > 0 && trimmed && endAt > startAt + 0.05;
+    label.textContent = visible ? ` · ${t("track.previewDuration", { duration: formatTime(endAt - startAt) })}` : "";
+    label.hidden = !visible;
+  }
+
+  /** 试听区间改动后立即刷新全部曲目的时长标记 */
+  function refreshTrackPreviewLabels() {
+    state.tracks.forEach((track, index) => {
+      if (!(Number(track.duration) > 0) && (Number(track.endAt) > 0 || Number(track.startAt) > 0)) {
+        ensureTrackDuration(track, index).then(() => updateTrackPreviewLabel(index));
+        return;
+      }
+      updateTrackPreviewLabel(index);
+    });
   }
 
   function updateTrackListState(index) {
     if (!els.trackList) return;
-    const followFocus = els.trackList.contains(document.activeElement);
     let activeRow = null;
     els.trackList.querySelectorAll(".touch-track-row").forEach((row, rowIndex) => {
       const active = rowIndex === index;
@@ -684,8 +887,8 @@
       row.setAttribute("aria-selected", String(active));
       if (active) activeRow = row;
     });
-    if (followFocus && activeRow) {
-      activeRow.focus({ preventScroll: true });
+    // 只滚动、不抢焦点:切歌、试听、暂停、恢复都不得移动用户当前焦点
+    if (activeRow && els.trackList.contains(document.activeElement)) {
       activeRow.scrollIntoView({ block: "nearest" });
     }
     const track = state.tracks[index];
@@ -1041,7 +1244,6 @@
 
   function setBackgroundPlayback(enabled, announce = true) {
     state.backgroundPlayback = Boolean(enabled);
-    els.backgroundPlaybackState.textContent = t(state.backgroundPlayback ? "toggle.on" : "toggle.off");
     els.backgroundPlaybackBtn.setAttribute("aria-pressed", String(state.backgroundPlayback));
     try { localStorage.setItem("melodio-background-playback", state.backgroundPlayback ? "1" : "0"); } catch (_) {}
     if (announce) showToast(t(state.backgroundPlayback ? "toast.backgroundOn" : "toast.backgroundOff"));
@@ -1088,16 +1290,18 @@
     setSkin(SKINS[index].id);
   }
 
-  function updateMotionLabel(withShortcut = state.motionLabelShortcut) {
-    state.motionLabelShortcut = withShortcut;
-    const mode = t(MOTION_MODES[state.motionMode]);
-    els.motionBtn.textContent = t(withShortcut ? "motion.buttonShortcut" : "motion.button", { mode });
+  function updateMotionLabel() {
+    els.motionTabs?.querySelectorAll("[data-motion-mode]").forEach((tab) => {
+      const active = Number(tab.dataset.motionMode) === state.motionMode;
+      tab.setAttribute("aria-selected", String(active));
+      tab.classList.toggle("is-active", active);
+    });
   }
 
   function cycleMotionMode() {
     state.motionMode = (state.motionMode + 1) % MOTION_MODES.length;
     document.documentElement.style.setProperty("--motion", [0.62, 1, 1.38][state.motionMode]);
-    updateMotionLabel(true);
+    updateMotionLabel();
     requestVisualFrame(true);
     showToast(t("motion.changed", { mode: t(MOTION_MODES[state.motionMode]) }));
   }
@@ -1107,10 +1311,10 @@
     i18n.apply();
     els.skinName.textContent = t(`skin.${SKINS[state.skinIndex].id}`);
     updateMotionLabel();
-    els.backgroundPlaybackState.textContent = t(state.backgroundPlayback ? "toggle.on" : "toggle.off");
     els.duotoneState.textContent = t(state.duotone ? "toggle.on" : "toggle.off");
     els.playBtn.setAttribute("aria-label", t(state.playing ? "control.pause" : "control.play"));
     if (els.languageSelect) els.languageSelect.value = i18n.language;
+    syncThemedSelect(els.languageSelect);
     if (els.welcomeDeleteBtn && !els.welcomeDeleteBtn.dataset.confirming) els.welcomeDeleteBtn.textContent = t("album.deleteSelected");
     if (state.tracks.length) renderMapping();
   }
@@ -1124,6 +1328,7 @@
   function toggleClean() {
     state.clean = !state.clean;
     els.body.dataset.clean = String(state.clean);
+    if (state.currentIndex >= 0) updateTrackCopy(state.currentIndex);
     showToast(t(state.clean ? "toast.cleanOn" : "toast.cleanOff"));
   }
 
@@ -1159,6 +1364,7 @@
         subtitle: track.subtitle || "",
         kicker: track.kicker || "",
         startAt: Number(track.startAt) || 0,
+        endAt: Number(track.endAt) || 0,
         objectPosition: track.objectPosition || "",
         variation: Number.isFinite(track.variationIndex) ? track.variationIndex : undefined,
         artIndex: Number.isFinite(track.artIndex) ? track.artIndex : undefined
@@ -1229,6 +1435,8 @@
       return;
     }
     state.mappingOpen = Boolean(open);
+    // 面板中途开合时把拖拽标记归零,避免下一次编辑跳过落盘
+    rangeDragging = false;
     els.mappingPanel.classList.toggle("is-open", state.mappingOpen);
     els.mappingPanel.setAttribute("aria-hidden", String(!state.mappingOpen));
     if (state.mappingOpen) {
@@ -1260,7 +1468,9 @@
         els.globalCoverSelect.append(option);
       });
       els.globalCoverSelect.disabled = !state.availableImages.length;
+      syncThemedSelect(els.globalCoverSelect);
     }
+    cleanupThemedSelects(els.mappingList);
     els.mappingList.replaceChildren();
     state.tracks.forEach((track, trackIndex) => {
       const row = document.createElement("div");
@@ -1319,99 +1529,280 @@
         showToast(`${track.title} → ${asset.name}`);
       });
 
-      const startEditor = document.createElement("div");
-      startEditor.className = "start-editor";
-
-      const startLabel = document.createElement("span");
-      startLabel.className = "start-label";
-      startLabel.textContent = t("mapping.startLabel");
-
-      const previewButton = document.createElement("button");
-      previewButton.type = "button";
-      previewButton.className = "start-preview-button";
-      previewButton.dataset.trackIndex = String(trackIndex);
-      previewButton.textContent = state.previewTrackIndex === trackIndex && !els.previewAudio.paused ? t("preview.stop") : t("preview.play");
-      previewButton.classList.toggle("is-playing", state.previewTrackIndex === trackIndex && !els.previewAudio.paused);
-      previewButton.addEventListener("click", () => previewTrackStart(trackIndex).catch((error) => showToast(t("toast.previewFailed", { error: error.message || error }))));
-
-      const timeline = document.createElement("div");
-      timeline.className = "start-timeline";
-      const range = document.createElement("input");
-      range.className = "start-range";
-      range.type = "range";
-      range.min = "0";
-      range.max = "1";
-      range.step = "0.1";
-      range.value = String(Number(track.startAt) || 0);
-      range.disabled = true;
-      range.setAttribute("aria-label", t("mapping.startFor", { title: track.title }));
-      const scale = document.createElement("div");
-      scale.className = "start-scale";
-      const zero = document.createElement("span");
-      zero.textContent = "00:00";
-      const durationText = document.createElement("span");
-      durationText.textContent = t("mapping.loadingDuration");
-      scale.append(zero, durationText);
-      timeline.append(range, scale);
-
-      const timeInput = document.createElement("input");
-      timeInput.className = "start-time-input";
-      timeInput.type = "text";
-      timeInput.inputMode = "decimal";
-      timeInput.value = formatTimePrecise(Number(track.startAt) || 0);
-      timeInput.setAttribute("aria-label", t("mapping.startTimeFor", { title: track.title }));
-      timeInput.title = t("mapping.startTimeHint");
-
-      const nudge = document.createElement("div");
-      nudge.className = "start-nudge";
-      const minus = document.createElement("button");
-      minus.type = "button";
-      minus.textContent = "−5s";
-      const plus = document.createElement("button");
-      plus.type = "button";
-      plus.textContent = "+5s";
-      nudge.append(minus, plus);
-
-      const updateStartUI = (value) => {
-        const applied = applyTrackStart(trackIndex, value);
-        range.value = String(applied);
-        timeInput.value = formatTimePrecise(applied);
-        const max = Number(range.max) || 0;
-        range.style.setProperty("--start-pct", `${max > 0 ? clamp(applied / max * 100, 0, 100) : 0}%`);
-      };
-
-      range.addEventListener("input", () => updateStartUI(Number(range.value)));
-      timeInput.addEventListener("change", () => updateStartUI(parseTimeCode(timeInput.value)));
-      timeInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          updateStartUI(parseTimeCode(timeInput.value));
-          timeInput.blur();
-        }
-      });
-      minus.addEventListener("click", () => updateStartUI((Number(track.startAt) || 0) - 5));
-      plus.addEventListener("click", () => updateStartUI((Number(track.startAt) || 0) + 5));
-
-      startEditor.append(startLabel, previewButton, timeline, timeInput, nudge);
-      row.append(number, thumb, copy, select, startEditor);
+      const rangeEditor = createRangeEditor(trackIndex, track);
+      row.append(number, thumb, copy, select, rangeEditor);
       els.mappingList.append(row);
+      setupThemedSelect(select);
+    });
+  }
 
-      ensureTrackDuration(track, trackIndex).then((duration) => {
-        if (!row.isConnected) return;
-        const maximum = duration > 0 ? Math.max(0, duration - 0.05) : 0;
-        range.max = String(maximum || 1);
-        range.disabled = !(duration > 0);
-        durationText.textContent = duration > 0 ? formatTime(duration) : t("mapping.durationUnavailable");
-        updateStartUI(Number(track.startAt) || 0);
+  const RANGE_MIN_GAP = 1;
+  let rangeDragging = false;
+
+  /** 单条试听区间:起点与终点共用一条时间线,按距离选择焦点把手 */
+  function createRangeEditor(trackIndex, track) {
+    const editor = document.createElement("div");
+    editor.className = "range-editor";
+    editor.dataset.trackIndex = String(trackIndex);
+
+    const head = document.createElement("div");
+    head.className = "range-head";
+    const label = document.createElement("span");
+    label.className = "range-label";
+    label.textContent = t("mapping.rangeLabel");
+    const hint = document.createElement("span");
+    hint.className = "range-hint";
+    hint.textContent = t("mapping.rangeHint");
+    head.append(label, hint);
+
+    const rail = document.createElement("div");
+    rail.className = "range-rail";
+    const railTrack = document.createElement("span");
+    railTrack.className = "range-rail-track";
+    const fill = document.createElement("span");
+    fill.className = "range-fill";
+
+    const startThumb = document.createElement("button");
+    startThumb.type = "button";
+    startThumb.className = "range-thumb range-thumb-start";
+    startThumb.dataset.point = "start";
+    startThumb.setAttribute("role", "slider");
+    startThumb.setAttribute("aria-orientation", "horizontal");
+    startThumb.setAttribute("aria-label", t("mapping.startPoint"));
+    const endThumb = document.createElement("button");
+    endThumb.type = "button";
+    endThumb.className = "range-thumb range-thumb-end";
+    endThumb.dataset.point = "end";
+    endThumb.setAttribute("role", "slider");
+    endThumb.setAttribute("aria-orientation", "horizontal");
+    endThumb.setAttribute("aria-label", t("mapping.endPoint"));
+    rail.append(railTrack, fill, startThumb, endThumb);
+
+    const scale = document.createElement("div");
+    scale.className = "range-scale";
+    const zeroLabel = document.createElement("span");
+    zeroLabel.textContent = "00:00";
+    const endLabel = document.createElement("span");
+    endLabel.textContent = t("mapping.loadingDuration");
+    scale.append(zeroLabel, endLabel);
+
+    const controls = document.createElement("div");
+    controls.className = "range-controls";
+    const previewButton = document.createElement("button");
+    previewButton.type = "button";
+    previewButton.className = "start-preview-button";
+    previewButton.dataset.trackIndex = String(trackIndex);
+    previewButton.textContent = state.previewTrackIndex === trackIndex && !els.previewAudio.paused ? t("preview.stop") : t("preview.play");
+    previewButton.classList.toggle("is-playing", state.previewTrackIndex === trackIndex && !els.previewAudio.paused);
+    previewButton.addEventListener("click", () => previewTrackStart(trackIndex).catch((error) => showToast(t("toast.previewFailed", { error: error.message || error }))));
+
+    const times = document.createElement("div");
+    times.className = "range-times";
+    const startTag = document.createElement("span");
+    startTag.className = "range-point-tag";
+    startTag.textContent = t("mapping.startShort");
+    const startInput = document.createElement("input");
+    startInput.className = "start-time-input";
+    startInput.type = "text";
+    startInput.inputMode = "decimal";
+    startInput.setAttribute("aria-label", t("mapping.startTimeFor", { title: track.title }));
+    startInput.title = t("mapping.startTimeHint");
+    const dash = document.createElement("span");
+    dash.className = "range-dash";
+    dash.textContent = "–";
+    const endInput = document.createElement("input");
+    endInput.className = "start-time-input end-time-input";
+    endInput.type = "text";
+    endInput.inputMode = "decimal";
+    endInput.setAttribute("aria-label", t("mapping.endTimeFor", { title: track.title }));
+    endInput.title = t("mapping.endTimeHint");
+    const endTag = document.createElement("span");
+    endTag.className = "range-point-tag";
+    endTag.textContent = t("mapping.endShort");
+    times.append(startTag, startInput, dash, endInput, endTag);
+
+    const actions = document.createElement("div");
+    actions.className = "range-actions";
+    const minus = document.createElement("button");
+    minus.type = "button";
+    minus.className = "range-nudge";
+    minus.textContent = "−5s";
+    const plus = document.createElement("button");
+    plus.type = "button";
+    plus.className = "range-nudge";
+    plus.textContent = "+5s";
+    actions.append(minus, plus);
+
+    controls.append(previewButton, times, actions);
+    editor.append(head, rail, scale, controls);
+
+    let duration = Number(track.duration) || 0;
+    let activePoint = "start";
+    let dragging = false;
+
+    const total = () => (duration > 0 ? duration : 0);
+    const startValue = () => clamp(Number(track.startAt) || 0, 0, total() || 1e9);
+    const endValue = () => (total() > 0 ? trackEndAt(track, duration) : 0);
+
+    const paint = () => {
+      const max = total();
+      const start = startValue();
+      const end = endValue();
+      const pct = (value) => (max > 0 ? clamp(value / max, 0, 1) * 100 : 0);
+      const startPct = pct(start);
+      const endPct = pct(end);
+      startThumb.style.left = `${startPct}%`;
+      endThumb.style.left = `${endPct}%`;
+      fill.style.left = `${startPct}%`;
+      fill.style.width = `${Math.max(0, endPct - startPct)}%`;
+      const known = max > 0;
+      const startMax = Math.max(0, (end || max) - RANGE_MIN_GAP);
+      startThumb.setAttribute("aria-valuemin", "0");
+      startThumb.setAttribute("aria-valuemax", String(startMax));
+      startThumb.setAttribute("aria-valuenow", String(start));
+      startThumb.setAttribute("aria-valuetext", formatTimePrecise(start));
+      endThumb.setAttribute("aria-valuemin", String(start + RANGE_MIN_GAP));
+      endThumb.setAttribute("aria-valuemax", String(max));
+      endThumb.setAttribute("aria-valuenow", String(end));
+      endThumb.setAttribute("aria-valuetext", formatTimePrecise(end));
+      startThumb.disabled = !known;
+      endThumb.disabled = !known;
+      startThumb.classList.toggle("is-active", activePoint === "start");
+      endThumb.classList.toggle("is-active", activePoint === "end");
+      startInput.disabled = !known;
+      endInput.disabled = !known;
+      previewButton.disabled = !known;
+      minus.disabled = !known;
+      plus.disabled = !known;
+      startInput.value = formatTimePrecise(start);
+      endInput.value = formatTimePrecise(end);
+      endLabel.textContent = known ? formatTime(max) : t("mapping.durationUnavailable");
+      const pointName = t(activePoint === "start" ? "mapping.startPoint" : "mapping.endPoint");
+      minus.setAttribute("aria-label", t("mapping.nudgeBack", { point: pointName }));
+      plus.setAttribute("aria-label", t("mapping.nudgeForward", { point: pointName }));
+      minus.title = t("mapping.nudgeBack", { point: pointName });
+      plus.title = t("mapping.nudgeForward", { point: pointName });
+    };
+
+    const setPoint = (point, raw) => {
+      if (!(total() > 0)) return;
+      if (point === "start") applyTrackStart(trackIndex, raw);
+      else applyTrackEnd(trackIndex, raw);
+      paint();
+    };
+
+    const focusPoint = (point) => {
+      activePoint = point;
+      const thumb = point === "start" ? startThumb : endThumb;
+      if (document.activeElement !== thumb) thumb.focus({ preventScroll: true });
+      paint();
+    };
+
+    const timeAt = (clientX) => {
+      const rect = rail.getBoundingClientRect();
+      if (!rect.width) return 0;
+      return clamp((clientX - rect.left) / rect.width, 0, 1) * total();
+    };
+
+    rail.addEventListener("pointerdown", (event) => {
+      if (!(total() > 0) || event.button !== 0) return;
+      const time = timeAt(event.clientX);
+      const point = Math.abs(time - endValue()) < Math.abs(time - startValue()) ? "end" : "start";
+      dragging = true;
+      rangeDragging = true;
+      focusPoint(point);
+      setPoint(point, time);
+      rail.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    });
+    rail.addEventListener("pointermove", (event) => {
+      if (!dragging) return;
+      setPoint(activePoint, timeAt(event.clientX));
+    });
+    const endDrag = (event) => {
+      if (!dragging) return;
+      dragging = false;
+      rangeDragging = false;
+      if (rail.hasPointerCapture?.(event.pointerId)) rail.releasePointerCapture(event.pointerId);
+      persistCurrentAlbum();
+    };
+    rail.addEventListener("pointerup", endDrag);
+    rail.addEventListener("pointercancel", endDrag);
+
+    const handleThumbKey = (event) => {
+      if (!(total() > 0)) return;
+      const point = event.currentTarget.dataset.point;
+      const current = point === "start" ? startValue() : endValue();
+      const step = event.shiftKey ? 5 : 1;
+      let next = null;
+      if (event.key === "ArrowLeft" || event.key === "ArrowDown") next = current - step;
+      else if (event.key === "ArrowRight" || event.key === "ArrowUp") next = current + step;
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = total();
+      else if (event.key === "PageDown") next = current - 10;
+      else if (event.key === "PageUp") next = current + 10;
+      if (next === null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      activePoint = point;
+      setPoint(point, next);
+    };
+    startThumb.addEventListener("keydown", handleThumbKey);
+    endThumb.addEventListener("keydown", handleThumbKey);
+    startThumb.addEventListener("focus", () => focusPoint("start"));
+    endThumb.addEventListener("focus", () => focusPoint("end"));
+
+    const commitInput = (point) => {
+      const input = point === "start" ? startInput : endInput;
+      const value = parseTimeCode(input.value);
+      if (Number.isFinite(value)) {
+        activePoint = point;
+        setPoint(point, value);
+      } else {
+        paint();
+      }
+    };
+    startInput.addEventListener("change", () => commitInput("start"));
+    endInput.addEventListener("change", () => commitInput("end"));
+    startInput.addEventListener("focus", () => { activePoint = "start"; paint(); });
+    endInput.addEventListener("focus", () => { activePoint = "end"; paint(); });
+    [startInput, endInput].forEach((input) => {
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        commitInput(input === startInput ? "start" : "end");
+        input.blur();
       });
     });
+    minus.addEventListener("click", () => setPoint(activePoint, (activePoint === "start" ? startValue() : endValue()) - 5));
+    plus.addEventListener("click", () => setPoint(activePoint, (activePoint === "start" ? startValue() : endValue()) + 5));
+
+    paint();
+    ensureTrackDuration(track, trackIndex).then((value) => {
+      if (!editor.isConnected) return;
+      if (Number.isFinite(value) && value > 0) duration = value;
+      paint();
+    });
+    return editor;
   }
 
   function resetAllStartPoints() {
     state.tracks.forEach((track, index) => applyTrackStart(index, 0));
+    refreshTrackPreviewLabels();
     renderMapping();
     persistCurrentAlbum();
     showToast(t("toast.startsReset"));
+  }
+
+  function resetAllEndPoints() {
+    state.tracks.forEach((track, index) => {
+      track.endAt = 0;
+      updateTrackPreviewLabel(index);
+    });
+    refreshTrackPreviewLabels();
+    renderMapping();
+    persistCurrentAlbum();
+    showToast(t("toast.endsReset"));
   }
 
   async function autoMapImages() {
@@ -1607,6 +1998,7 @@
         imageName: imageFile?.name || "",
         imagePath: imageFile?.webkitRelativePath || imageFile?.name || "",
         startAt: Number(details.startAt) || 0,
+        endAt: Number(details.endAt) || 0,
         objectPosition: details.objectPosition || "",
         variationIndex: Number.isFinite(Number(details.variation)) ? Number(details.variation) : undefined,
         artIndex: generatedArt ? index : Math.max(0, artIndex),
@@ -1896,7 +2288,8 @@
           artIndex,
           generatedArt: !imageNames.length,
           objectPosition: "",
-          startAt: 0
+          startAt: 0,
+          endAt: 0
         };
       });
       await downscaleTrackImages(tracks);
@@ -1926,14 +2319,16 @@
     if (pendingSeek && pendingSeek.audio === audio && audio.seeking) current = pendingSeek.target;
     const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
     const startAt = clamp(Number(track?.startAt) || 0, 0, duration || 1e9);
-    const elapsed = Math.max(0, current - startAt);
-    const fragmentDuration = Math.max(0, duration - startAt);
+    const endAt = trackEndAt(track, duration);
+    const fragmentDuration = Math.max(0, endAt - startAt);
+    const elapsed = clamp(current - startAt, 0, fragmentDuration);
     els.currentTime.textContent = formatTime(elapsed);
     els.durationTime.textContent = formatTime(fragmentDuration);
     els.progressFill.style.width = fragmentDuration > 0 ? `${clamp(elapsed / fragmentDuration * 100, 0, 100)}%` : "0%";
 
     // 拖动进度条期间不触发自动切歌
-    if (!seekActive && duration > 0 && current >= duration - 0.08 && state.playing && !state.transitioning) {
+    if (!seekActive && duration > 0 && current >= endAt - 0.08 && state.playing && !state.transitioning) {
+      audio.pause();
       nextTrack(1);
     }
   }
@@ -1955,7 +2350,16 @@
   function seekTargetFromEvent(event, ctx) {
     const rect = els.progressTrack.getBoundingClientRect();
     const ratio = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-    return { target: ctx.startAt + ratio * ctx.fragmentDuration, ratio, startAt: ctx.startAt };
+    // 进度条只映射试听区间,并且永远不越过终点:末端留出一点余量,
+    // 否则松手就会命中「到终点自动切歌」,变成拖动即跳曲。
+    const inset = Math.min(0.15, ctx.fragmentDuration * 0.5);
+    const target = clamp(
+      ctx.startAt + ratio * ctx.fragmentDuration,
+      ctx.startAt,
+      Math.max(ctx.startAt, ctx.startAt + ctx.fragmentDuration - inset)
+    );
+    const effectiveRatio = ctx.fragmentDuration > 0 ? clamp((target - ctx.startAt) / ctx.fragmentDuration, 0, 1) : 0;
+    return { target, ratio: effectiveRatio, startAt: ctx.startAt };
   }
 
   /** 只更新进度条 UI(拖动中实时预览,不碰音频) */
@@ -2005,7 +2409,8 @@
       const track = state.tracks[state.currentIndex];
       const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
       const startAt = clamp(Number(track?.startAt) || 0, 0, duration || 1e9);
-      seekCtx = { audio, startAt, fragmentDuration: Math.max(0, duration - startAt) };
+      const endAt = trackEndAt(track, duration);
+      seekCtx = { audio, startAt, fragmentDuration: Math.max(0, endAt - startAt) };
       updateSeekUI(event, seekCtx); // 按下先预览,不 seek(松手才跳,整段交互只冲刷一次解码器)
     });
     trackEl.addEventListener("pointermove", (event) => {
@@ -2485,7 +2890,15 @@
       els.audio.forEach((audio) => { audio.volume = volume; });
       els.previewAudio.volume = volume;
     });
-    els.motionBtn.addEventListener("click", cycleMotionMode);
+    els.motionTabs?.addEventListener("click", (event) => {
+      const tab = event.target.closest("[data-motion-mode]");
+      if (!tab) return;
+      state.motionMode = clamp(Number(tab.dataset.motionMode), 0, MOTION_MODES.length - 1);
+      document.documentElement.style.setProperty("--motion", [0.62, 1, 1.38][state.motionMode]);
+      updateMotionLabel();
+      requestVisualFrame(true);
+      showToast(t("motion.changed", { mode: t(MOTION_MODES[state.motionMode]) }));
+    });
     els.languageSelect?.addEventListener("change", () => setInterfaceLanguage(els.languageSelect.value));
     els.mappingBtn.addEventListener("click", () => setMappingOpen(!state.mappingOpen));
     els.mappingCloseBtn.addEventListener("click", () => setMappingOpen(false));
@@ -2502,6 +2915,7 @@
     });
     els.autoMapBtn.addEventListener("click", () => autoMapImages().catch((error) => showToast(error.message || String(error))));
     els.resetStartsBtn.addEventListener("click", resetAllStartPoints);
+    els.resetEndsBtn?.addEventListener("click", resetAllEndPoints);
     els.mappingPanel.addEventListener("click", (event) => {
       if (event.target === els.mappingPanel) setMappingOpen(false);
     });
@@ -2592,7 +3006,9 @@
     els.spectrumRuler.innerHTML = Array.from({ length: state.spectrum.length }, () => "<i></i>").join("");
     state.spectrumBars = [...els.spectrumRuler.children];
     i18n.apply();
-    updateMotionLabel(false);
+    setupThemedSelect(els.languageSelect);
+    setupThemedSelect(els.globalCoverSelect);
+    updateMotionLabel();
     bindEvents();
     bindProgressSeek();
     resizeCanvas();
